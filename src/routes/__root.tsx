@@ -79,14 +79,13 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "Lovable App" },
-      { name: "description", content: "Lovable Generated Project" },
-      { name: "author", content: "Lovable" },
-      { property: "og:title", content: "Lovable App" },
-      { property: "og:description", content: "Lovable Generated Project" },
+      { title: "RELI — Reintegration & Early Learning Institute" },
+      { name: "description", content: "RELI, a program of Hope for Life Agency, empowers vulnerable children and youth through early learning, corrective education, life skills, family support and reintegration." },
+      { name: "author", content: "Hope for Life Agency" },
+      { property: "og:title", content: "RELI — Reintegration & Early Learning Institute" },
+      { property: "og:description", content: "Healing Minds. Building Futures. Education with compassion, reintegration with dignity." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
-      { name: "twitter:site", content: "@Lovable" },
     ],
     links: [
       {
