@@ -1,0 +1,125 @@
+{
+  "info": {
+    "name": "RELI API",
+    "description": "RELI Hope for Life Agency — Backend API for contact messages and donations (M-Pesa & Bank)",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "baseUrl", "value": "http://localhost:5000/api" }
+  ],
+  "item": [
+    {
+      "name": "Health",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": "{{baseUrl}}/health"
+      }
+    },
+    {
+      "name": "Messages",
+      "item": [
+        {
+          "name": "Send Contact Message",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Jane Doe\",\n  \"email\": \"jane@example.com\",\n  \"subject\": \"Partnership Inquiry\",\n  \"message\": \"I would like to learn more about volunteering with RELI.\"\n}"
+            },
+            "url": "{{baseUrl}}/messages"
+          }
+        },
+        {
+          "name": "Get All Messages",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/messages"
+          }
+        },
+        {
+          "name": "Message Stats",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/messages/stats"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Payments",
+      "item": [
+        {
+          "name": "Get Payment Config",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/payments/config"
+          }
+        },
+        {
+          "name": "M-Pesa STK Push (PayBill)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"phone\": \"254712345678\",\n  \"amount\": 1000,\n  \"method\": \"mpesa_paybill\",\n  \"category\": \"education\",\n  \"donorName\": \"John Doe\"\n}"
+            },
+            "url": "{{baseUrl}}/payments/mpesa/stk"
+          }
+        },
+        {
+          "name": "M-Pesa STK Push (Buy Goods)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"phone\": \"254712345678\",\n  \"amount\": 500,\n  \"method\": \"mpesa_buygoods\",\n  \"category\": \"general\",\n  \"donorName\": \"Jane Doe\"\n}"
+            },
+            "url": "{{baseUrl}}/payments/mpesa/stk"
+          }
+        },
+        {
+          "name": "Record Bank Donation",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"donorName\": \"John Doe\",\n  \"email\": \"john@example.com\",\n  \"amount\": 5000,\n  \"category\": \"feeding\"\n}"
+            },
+            "url": "{{baseUrl}}/payments/bank"
+          }
+        },
+        {
+          "name": "Get Payment Status",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/payments/status/PAYMENT_ID_HERE"
+          }
+        },
+        {
+          "name": "Get All Payments",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/payments"
+          }
+        },
+        {
+          "name": "M-Pesa Callback (Webhook)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"Body\": {\n    \"stkCallback\": {\n      \"MerchantRequestID\": \"test\",\n      \"CheckoutRequestID\": \"test\",\n      \"ResultCode\": 0,\n      \"ResultDesc\": \"Success\",\n      \"CallbackMetadata\": {\n        \"Item\": [\n          { \"Name\": \"MpesaReceiptNumber\", \"Value\": \"QAB123XYZ\" }\n        ]\n      }\n    }\n  }\n}"
+            },
+            "url": "{{baseUrl}}/payments/mpesa/callback"
+          }
+        }
+      ]
+    }
+  ]
+}
