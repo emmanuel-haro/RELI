@@ -13,6 +13,7 @@ import { Route as ServicesRouteImport } from './routes/services'
 import { Route as LiteratureRouteImport } from './routes/literature'
 import { Route as GalleryRouteImport } from './routes/gallery'
 import { Route as FaqRouteImport } from './routes/faq'
+import { Route as DonationRouteImport } from './routes/donation'
 import { Route as CareersRouteImport } from './routes/careers'
 import { Route as AboutRouteImport } from './routes/about'
 import { Route as IndexRouteImport } from './routes/index'
@@ -37,6 +38,11 @@ const FaqRoute = FaqRouteImport.update({
   path: '/faq',
   getParentRoute: () => rootRouteImport,
 } as any)
+const DonationRoute = DonationRouteImport.update({
+  id: '/donation',
+  path: '/donation',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const CareersRoute = CareersRouteImport.update({
   id: '/careers',
   path: '/careers',
@@ -57,6 +63,7 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/about': typeof AboutRoute
   '/careers': typeof CareersRoute
+  '/donation': typeof DonationRoute
   '/faq': typeof FaqRoute
   '/gallery': typeof GalleryRoute
   '/literature': typeof LiteratureRoute
@@ -66,6 +73,7 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/about': typeof AboutRoute
   '/careers': typeof CareersRoute
+  '/donation': typeof DonationRoute
   '/faq': typeof FaqRoute
   '/gallery': typeof GalleryRoute
   '/literature': typeof LiteratureRoute
@@ -76,6 +84,7 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/about': typeof AboutRoute
   '/careers': typeof CareersRoute
+  '/donation': typeof DonationRoute
   '/faq': typeof FaqRoute
   '/gallery': typeof GalleryRoute
   '/literature': typeof LiteratureRoute
@@ -87,6 +96,7 @@ export interface FileRouteTypes {
     | '/'
     | '/about'
     | '/careers'
+    | '/donation'
     | '/faq'
     | '/gallery'
     | '/literature'
@@ -96,6 +106,7 @@ export interface FileRouteTypes {
     | '/'
     | '/about'
     | '/careers'
+    | '/donation'
     | '/faq'
     | '/gallery'
     | '/literature'
@@ -105,6 +116,7 @@ export interface FileRouteTypes {
     | '/'
     | '/about'
     | '/careers'
+    | '/donation'
     | '/faq'
     | '/gallery'
     | '/literature'
@@ -115,6 +127,7 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AboutRoute: typeof AboutRoute
   CareersRoute: typeof CareersRoute
+  DonationRoute: typeof DonationRoute
   FaqRoute: typeof FaqRoute
   GalleryRoute: typeof GalleryRoute
   LiteratureRoute: typeof LiteratureRoute
@@ -151,6 +164,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof FaqRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/donation': {
+      id: '/donation'
+      path: '/donation'
+      fullPath: '/donation'
+      preLoaderRoute: typeof DonationRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/careers': {
       id: '/careers'
       path: '/careers'
@@ -179,6 +199,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AboutRoute: AboutRoute,
   CareersRoute: CareersRoute,
+  DonationRoute: DonationRoute,
   FaqRoute: FaqRoute,
   GalleryRoute: GalleryRoute,
   LiteratureRoute: LiteratureRoute,
