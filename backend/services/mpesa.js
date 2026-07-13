@@ -1,7 +1,7 @@
 export function getPaymentConfig() {
   return {
-    paybill: process.env.MPESA_PAYBILL || "600000",
-    till: process.env.MPESA_TILL || "174379",
+    paybill: process.env.MPESA_PAYBILL || "126914",
+    till: process.env.MPESA_TILL || "4062256",
     shortcode: process.env.MPESA_SHORTCODE || "174379",
     bank: {
       name: process.env.BANK_NAME || "Kenya Commercial Bank",

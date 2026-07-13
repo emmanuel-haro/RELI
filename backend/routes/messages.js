@@ -19,11 +19,17 @@ router.post("/", async (req, res) => {
 
     const saved = await Message.create({ name, email, subject, message });
     const notification = await sendContactNotification({ name, email, subject, message });
+    if (!notification.sent) {
+      return res.status(502).json({
+        success: false,
+        error: `Message saved, but email delivery failed: ${notification.error || "unknown SMTP error"}`,
+      });
+    }
 
     res.status(201).json({
       success: true,
       message: "Your message has been received. We will get back to you soon.",
-      data: { id: saved._id, emailSent: notification.sent },
+      data: { id: saved._id, emailSent: true },
     });
   } catch (err) {
     console.error("Message error:", err);

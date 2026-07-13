@@ -3,6 +3,7 @@ import mongoose from "mongoose";
 const paymentSchema = new mongoose.Schema(
   {
     donorName: { type: String, trim: true },
+    email: { type: String, trim: true, lowercase: true },
     phone: { type: String, required: true },
     amount: { type: Number, required: true, min: 1 },
     category: { type: String, default: "general" },

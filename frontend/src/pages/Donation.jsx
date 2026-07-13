@@ -38,6 +38,11 @@ const categories = [
 ];
 
 const amounts = [500, 1000, 2000, 5000, 10000];
+const methodLabels = {
+  mpesa_paybill: "M-Pesa PayBill",
+  mpesa_buygoods: "M-Pesa Buy Goods",
+  bank_transfer: "Bank Transfer",
+};
 
 export default function Donation() {
   const [config, setConfig] = useState(null);
@@ -86,7 +91,12 @@ export default function Donation() {
         category: form.category,
         method,
       });
-      setSuccess({ type: "bank", message: res.message, reference: res.data?.reference });
+      setSuccess({
+        type: method,
+        methodLabel: res.data?.paymentMethod || methodLabels[method] || "Donation",
+        message: res.message,
+        reference: res.data?.reference,
+      });
     } catch (err) {
       setError(err.message);
     } finally {
@@ -189,6 +199,9 @@ export default function Donation() {
             className="mx-auto mt-6 max-w-xl rounded-2xl bg-gradient-soft p-6 text-center"
           >
             <CheckCircle2 className="mx-auto h-10 w-10 text-brand-green" />
+            {success.methodLabel && (
+              <p className="mt-3 text-sm font-medium text-muted-foreground">{success.methodLabel} confirmed</p>
+            )}
             <p className="mt-3 font-semibold text-foreground">{success.message}</p>
             {success.reference && (
               <p className="mt-2 text-sm text-muted-foreground">Reference: <strong>{success.reference}</strong></p>
@@ -210,19 +223,23 @@ export default function Donation() {
                   <div className="mt-4 space-y-3 text-muted-foreground">
                     {method === "mpesa_paybill" ? (
                       <>
-                        <p className="text-sm"><strong className="text-foreground">Paybill No:</strong> {config?.paybill || "126914"} -{config?.bank?.accountName || "Hope for life Agency account"} -id no or your Name</p>
+                        <p className="text-sm">
+                          <strong className="text-foreground">Paybill No:</strong> 126914 - Hope for life Agency account - id no or your Name
+                        </p>
                         <p className="text-sm">Please use your M-Pesa menu to send the donation, then record the transfer below.</p>
                       </>
                     ) : (
                       <>
-                        <p><strong className="text-foreground">Till Number:</strong> {config?.till || "..."}</p>
-                        <p className="text-sm">Go to M-Pesa → Lipa na M-Pesa → Buy Goods → enter Till number, then record the transfer below.</p>
+                        <p className="text-sm">
+                          <strong className="text-foreground">Buy Goods Till Number:</strong> 4062256
+                        </p>
+                        <p className="text-sm">Go to M-Pesa → Lipa na M-Pesa → Buy Goods → enter Till number 4062256, then record the transfer below.</p>
                       </>
                     )}
                   </div>
                   <motion.button
                     whileHover={{ scale: 1.02 }}
-                    onClick={() => copyText(method === "mpesa_paybill" ? config?.paybill : config?.till, "number")}
+                    onClick={() => copyText(method === "mpesa_paybill" ? "126914" : "4062256", "number")}
                     className="mt-4 inline-flex items-center gap-2 rounded-full bg-muted px-4 py-2 text-sm font-medium"
                   >
                     {copied === "number" ? <CheckCircle2 className="h-4 w-4 text-brand-green" /> : <Copy className="h-4 w-4" />}
@@ -233,8 +250,10 @@ export default function Donation() {
 
               <Reveal direction="right" delay={0.1}>
                 <form onSubmit={handleBankSubmit} className="rounded-2xl border border-border bg-card p-8 shadow-soft">
-                  <h3 className="text-xl font-bold text-foreground">Record Donation</h3>
-                  <p className="mt-1 text-sm text-muted-foreground">After transferring, fill this form so we can acknowledge your gift.</p>
+                  <h3 className="text-xl font-bold text-foreground">
+                    {method === "mpesa_paybill" ? "Confirm M-Pesa PayBill Payment" : "Confirm M-Pesa Buy Goods Payment"}
+                  </h3>
+                  <p className="mt-1 text-sm text-muted-foreground">After transferring, fill this form to confirm your M-Pesa payment details.</p>
                   <div className="mt-6 space-y-4">
                     <div>
                       <label className="mb-1 block text-sm font-medium">Your Name</label>
@@ -286,7 +305,7 @@ export default function Donation() {
                         const CatIcon = getCategoryIcon(form.category);
                         return <CatIcon className="h-4 w-4" />;
                       })()}
-                        {loading ? "Recording..." : "Confirm Donation"}
+                        {loading ? "Recording..." : (method === "mpesa_paybill" ? "Confirm PayBill Payment" : "Confirm Buy Goods Payment")}
                     </motion.button>
                   </div>
                 </form>
@@ -331,8 +350,8 @@ export default function Donation() {
 
               <Reveal direction="right" delay={0.1}>
                 <form onSubmit={handleBankSubmit} className="rounded-2xl border border-border bg-card p-8 shadow-soft">
-                  <h3 className="text-xl font-bold text-foreground">Record Bank Donation</h3>
-                  <p className="mt-1 text-sm text-muted-foreground">After transferring, fill this form so we can acknowledge your gift.</p>
+                  <h3 className="text-xl font-bold text-foreground">Confirm Bank Transfer Payment</h3>
+                  <p className="mt-1 text-sm text-muted-foreground">After bank transfer, fill this form to confirm your bank payment details.</p>
                   <div className="mt-6 space-y-4">
                     <div>
                       <label className="mb-1 block text-sm font-medium">Your Name</label>
@@ -381,7 +400,7 @@ export default function Donation() {
                       className="inline-flex w-full items-center justify-center gap-2 rounded-full bg-gradient-hero px-6 py-3 font-semibold text-primary-foreground shadow-soft disabled:opacity-70"
                     >
                       {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Landmark className="h-4 w-4" />}
-                      {loading ? "Recording..." : "Confirm Bank Donation"}
+                      {loading ? "Recording..." : "Confirm Bank Payment"}
                     </motion.button>
                   </div>
                 </form>

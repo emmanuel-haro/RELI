@@ -4,6 +4,11 @@ import { getPaymentConfig } from "../services/mpesa.js";
 import { sendDonationConfirmation } from "../services/email.js";
 
 const router = Router();
+const methodLabels = {
+  mpesa_paybill: "M-Pesa PayBill",
+  mpesa_buygoods: "M-Pesa Buy Goods",
+  bank_transfer: "Bank Transfer",
+};
 
 router.get("/config", (_req, res) => {
   res.json({ success: true, data: getPaymentConfig() });
@@ -19,6 +24,7 @@ router.post("/bank", async (req, res) => {
 
     const payment = await Payment.create({
       donorName,
+      email,
       phone: method && method.startsWith("mpesa") ? "mpesa" : "bank",
       amount: Number(amount),
       category: category || "general",
@@ -28,21 +34,30 @@ router.post("/bank", async (req, res) => {
     });
 
     const config = getPaymentConfig();
+    const methodLabel = methodLabels[payment.method] || "Donation";
 
-    if (email) {
-      await sendDonationConfirmation({
-        email,
-        donorName,
-        amount,
-        method: payment.method === "bank_transfer" ? "Bank Transfer" : "M-Pesa (manual)",
+    const emailResult = await sendDonationConfirmation({
+      email,
+      donorName,
+      amount,
+      category: payment.category,
+      method: methodLabel,
+      reference: payment.accountReference,
+    });
+
+    if (!emailResult.sent) {
+      return res.status(502).json({
+        success: false,
+        error: `Donation saved, but email delivery failed: ${emailResult.error || "unknown SMTP error"}`,
       });
     }
 
     res.status(201).json({
       success: true,
-      message: "Donation recorded. Thank you — we will acknowledge your gift.",
+      message: `${methodLabel} payment recorded. Thank you — we will acknowledge your gift.`,
       data: {
         paymentId: payment._id,
+        paymentMethod: methodLabel,
         bank: config.bank,
         reference: payment.accountReference,
       },
