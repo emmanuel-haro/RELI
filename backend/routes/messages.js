@@ -6,6 +6,13 @@ const router = Router();
 
 router.post("/", async (req, res) => {
   try {
+    if (!req.body || Object.keys(req.body).length === 0) {
+      return res.status(400).json({
+        success: false,
+        error: "Request body is missing. In Postman: Body → raw → JSON, and add Content-Type: application/json",
+      });
+    }
+
     const { name, email, subject, message } = req.body;
 
     if (!name?.trim() || !email?.trim() || !subject?.trim() || !message?.trim()) {

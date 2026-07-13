@@ -16,6 +16,13 @@ router.get("/config", (_req, res) => {
 
 router.post("/bank", async (req, res) => {
   try {
+    if (!req.body || Object.keys(req.body).length === 0) {
+      return res.status(400).json({
+        success: false,
+        error: "Request body is missing. In Postman: Body → raw → JSON, and add Content-Type: application/json",
+      });
+    }
+
     const { donorName, email, amount, category, reference, method } = req.body;
 
     if (!amount || amount < 1) {
