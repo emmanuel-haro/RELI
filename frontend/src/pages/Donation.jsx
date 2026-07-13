@@ -52,11 +52,11 @@ export default function Donation() {
     api.getPaymentConfig()
       .then((res) => setConfig(res.data))
       .catch(() => setConfig({
-        paybill: "600000",
-        till: "174379",
+        paybill: "126914",
+        till: "4062256",
         bank: {
           name: "Kenya Commercial Bank",
-          accountName: "Hope for Life Agency",
+          accountName: "Hope for life Agency account",
           accountNumber: "1234567890",
           branch: "Kilifi Branch",
           swift: "KCBLKENX",
@@ -70,27 +70,7 @@ export default function Donation() {
     setTimeout(() => setCopied(""), 2000);
   }
 
-  async function handleMpesaSubmit(e) {
-    e.preventDefault();
-    setLoading(true);
-    setError("");
-    setSuccess(null);
-
-    try {
-      const res = await api.initiateMpesa({
-        phone: form.phone,
-        amount: Number(form.amount),
-        method,
-        category: form.category,
-        donorName: form.donorName,
-      });
-      setSuccess({ type: "mpesa", message: res.message, paymentId: res.data?.paymentId });
-    } catch (err) {
-      setError(err.message);
-    } finally {
-      setLoading(false);
-    }
-  }
+  // STK Push has been removed — M-Pesa methods use the same record flow as bank transfers.
 
   async function handleBankSubmit(e) {
     e.preventDefault();
@@ -104,6 +84,7 @@ export default function Donation() {
         email: form.email,
         amount: Number(form.amount),
         category: form.category,
+        method,
       });
       setSuccess({ type: "bank", message: res.message, reference: res.data?.reference });
     } catch (err) {
@@ -114,6 +95,23 @@ export default function Donation() {
   }
 
   const bank = config?.bank;
+
+  function getCategoryIcon(cat) {
+    switch (cat) {
+      case "education":
+        return GraduationCap;
+      case "feeding":
+        return Utensils;
+      case "materials":
+        return BookOpen;
+      case "infrastructure":
+        return Building2;
+      case "therapy":
+        return HeartPulse;
+      default:
+        return Gift;
+    }
+  }
 
   return (
     <>
@@ -212,14 +210,13 @@ export default function Donation() {
                   <div className="mt-4 space-y-3 text-muted-foreground">
                     {method === "mpesa_paybill" ? (
                       <>
-                        <p><strong className="text-foreground">PayBill Number:</strong> {config?.paybill || "..."}</p>
-                        <p><strong className="text-foreground">Account:</strong> RELI Donation</p>
-                        <p className="text-sm">Or use the STK Push form to pay directly from your phone.</p>
+                        <p className="text-sm"><strong className="text-foreground">Paybill No:</strong> {config?.paybill || "126914"} -{config?.bank?.accountName || "Hope for life Agency account"} -id no or your Name</p>
+                        <p className="text-sm">Please use your M-Pesa menu to send the donation, then record the transfer below.</p>
                       </>
                     ) : (
                       <>
                         <p><strong className="text-foreground">Till Number:</strong> {config?.till || "..."}</p>
-                        <p className="text-sm">Go to M-Pesa → Lipa na M-Pesa → Buy Goods → enter Till number.</p>
+                        <p className="text-sm">Go to M-Pesa → Lipa na M-Pesa → Buy Goods → enter Till number, then record the transfer below.</p>
                       </>
                     )}
                   </div>
@@ -235,27 +232,25 @@ export default function Donation() {
               </Reveal>
 
               <Reveal direction="right" delay={0.1}>
-                <form onSubmit={handleMpesaSubmit} className="rounded-2xl border border-border bg-card p-8 shadow-soft">
-                  <h3 className="text-xl font-bold text-foreground">Pay via STK Push</h3>
-                  <p className="mt-1 text-sm text-muted-foreground">Enter your details and receive a prompt on your phone.</p>
+                <form onSubmit={handleBankSubmit} className="rounded-2xl border border-border bg-card p-8 shadow-soft">
+                  <h3 className="text-xl font-bold text-foreground">Record Donation</h3>
+                  <p className="mt-1 text-sm text-muted-foreground">After transferring, fill this form so we can acknowledge your gift.</p>
                   <div className="mt-6 space-y-4">
                     <div>
                       <label className="mb-1 block text-sm font-medium">Your Name</label>
                       <input
                         value={form.donorName}
                         onChange={(e) => setForm({ ...form, donorName: e.target.value })}
-                        className="w-full rounded-xl border border-input bg-background px-4 py-2.5 outline-none focus:border-primary focus:ring-2 focus:ring-ring/40"
-                        placeholder="John Doe"
+                        className="w-full rounded-xl border border-input bg-background px-4 py-2.5 outline-none focus:border-primary"
                       />
                     </div>
                     <div>
-                      <label className="mb-1 block text-sm font-medium">M-Pesa Phone Number*</label>
+                      <label className="mb-1 block text-sm font-medium">Email (optional)</label>
                       <input
-                        value={form.phone}
-                        onChange={(e) => setForm({ ...form, phone: e.target.value })}
-                        required
-                        className="w-full rounded-xl border border-input bg-background px-4 py-2.5 outline-none focus:border-primary focus:ring-2 focus:ring-ring/40"
-                        placeholder="07XX XXX XXX"
+                        type="email"
+                        value={form.email}
+                        onChange={(e) => setForm({ ...form, email: e.target.value })}
+                        className="w-full rounded-xl border border-input bg-background px-4 py-2.5 outline-none focus:border-primary"
                       />
                     </div>
                     <div>
@@ -271,28 +266,14 @@ export default function Donation() {
                       </select>
                     </div>
                     <div>
-                      <label className="mb-1 block text-sm font-medium">Amount (KES)*</label>
-                      <div className="mb-2 flex flex-wrap gap-2">
-                        {amounts.map((a) => (
-                          <button
-                            key={a}
-                            type="button"
-                            onClick={() => setForm({ ...form, amount: a })}
-                            className={`rounded-full px-3 py-1 text-sm font-medium transition-colors ${
-                              form.amount === a ? "bg-gradient-hero text-primary-foreground" : "bg-muted"
-                            }`}
-                          >
-                            {a.toLocaleString()}
-                          </button>
-                        ))}
-                      </div>
+                      <label className="mb-1 block text-sm font-medium">Amount Transferred (KES)*</label>
                       <input
                         type="number"
                         min="1"
                         value={form.amount}
                         onChange={(e) => setForm({ ...form, amount: e.target.value })}
                         required
-                        className="w-full rounded-xl border border-input bg-background px-4 py-2.5 outline-none focus:border-primary focus:ring-2 focus:ring-ring/40"
+                        className="w-full rounded-xl border border-input bg-background px-4 py-2.5 outline-none focus:border-primary"
                       />
                     </div>
                     <motion.button
@@ -301,8 +282,11 @@ export default function Donation() {
                       disabled={loading}
                       className="inline-flex w-full items-center justify-center gap-2 rounded-full bg-gradient-hero px-6 py-3 font-semibold text-primary-foreground shadow-soft disabled:opacity-70"
                     >
-                      {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Smartphone className="h-4 w-4" />}
-                      {loading ? "Sending STK Push..." : "Pay with M-Pesa"}
+                      {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : (() => {
+                        const CatIcon = getCategoryIcon(form.category);
+                        return <CatIcon className="h-4 w-4" />;
+                      })()}
+                        {loading ? "Recording..." : "Confirm Donation"}
                     </motion.button>
                   </div>
                 </form>

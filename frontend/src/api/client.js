@@ -16,7 +16,8 @@ export const api = {
   health: () => request("/health"),
   sendMessage: (body) => request("/messages", { method: "POST", body: JSON.stringify(body) }),
   getPaymentConfig: () => request("/payments/config"),
-  initiateMpesa: (body) => request("/payments/mpesa/stk", { method: "POST", body: JSON.stringify(body) }),
+  // STK Push removed: keep function for backward compatibility but point to /payments/bank
+  initiateMpesa: (body) => request("/payments/bank", { method: "POST", body: JSON.stringify(body) }),
   recordBankDonation: (body) => request("/payments/bank", { method: "POST", body: JSON.stringify(body) }),
   getPaymentStatus: (id) => request(`/payments/status/${id}`),
 };

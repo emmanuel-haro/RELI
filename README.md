@@ -9,7 +9,6 @@ Full-stack website for the **Reintegration & Early Learning Institute (RELI)** w
 | **Frontend** | React 19, JavaScript (JSX), Vite, Tailwind CSS v4, Framer Motion, React Router |
 | **Backend** | Node.js, Express.js, MongoDB (Mongoose) |
 | **Payments** | M-Pesa PayBill, M-Pesa Buy Goods (Till), Bank Transfer |
-| **API Testing** | Postman collection in `postman/` |
 
 ## Project Structure
 
@@ -25,7 +24,6 @@ Full-stack website for the **Reintegration & Early Learning Institute (RELI)** w
 │   ├── models/        # MongoDB schemas
 │   ├── services/      # M-Pesa, email
 │   └── package.json
-└── postman/           # Postman API collection
 ```
 
 ## Setup
@@ -58,10 +56,6 @@ npm run dev
 - Frontend: http://localhost:5173
 - Backend API: http://localhost:5000
 
-### Postman
-
-Import `postman/RELI-API.postman_collection.json` into Postman to test all API endpoints.
-
 ## API Endpoints
 
 | Method | Endpoint | Description |
@@ -70,7 +64,7 @@ Import `postman/RELI-API.postman_collection.json` into Postman to test all API e
 | POST | `/api/messages` | Submit contact form |
 | GET | `/api/messages` | List messages |
 | GET | `/api/payments/config` | Payment details (PayBill, Till, Bank) |
-| POST | `/api/payments/mpesa/stk` | Initiate M-Pesa STK Push |
+| POST | `/api/payments/bank` | Record manual M-Pesa or bank transfer donation |
 | POST | `/api/payments/bank` | Record bank transfer donation |
 | GET | `/api/payments/status/:id` | Check payment status |
 

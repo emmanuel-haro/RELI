@@ -1,6 +1,6 @@
 import { Router } from "express";
 import Payment from "../models/Payment.js";
-import { initiateStkPush, getPaymentConfig } from "../services/mpesa.js";
+import { getPaymentConfig } from "../services/mpesa.js";
 import { sendDonationConfirmation } from "../services/email.js";
 
 const router = Router();
@@ -11,7 +11,7 @@ router.get("/config", (_req, res) => {
 
 router.post("/bank", async (req, res) => {
   try {
-    const { donorName, email, amount, category, reference } = req.body;
+    const { donorName, email, amount, category, reference, method } = req.body;
 
     if (!amount || amount < 1) {
       return res.status(400).json({ success: false, error: "Valid amount is required" });
@@ -19,12 +19,12 @@ router.post("/bank", async (req, res) => {
 
     const payment = await Payment.create({
       donorName,
-      phone: "bank",
+      phone: method && method.startsWith("mpesa") ? "mpesa" : "bank",
       amount: Number(amount),
       category: category || "general",
-      method: "bank_transfer",
+      method: method || "bank_transfer",
       status: "pending",
-      accountReference: reference || `BANK-${Date.now()}`,
+      accountReference: reference || `REC-${Date.now()}`,
     });
 
     const config = getPaymentConfig();
@@ -34,13 +34,13 @@ router.post("/bank", async (req, res) => {
         email,
         donorName,
         amount,
-        method: "Bank Transfer",
+        method: payment.method === "bank_transfer" ? "Bank Transfer" : "M-Pesa (manual)",
       });
     }
 
     res.status(201).json({
       success: true,
-      message: "Bank transfer donation recorded. Please use the bank details provided.",
+      message: "Donation recorded. Thank you — we will acknowledge your gift.",
       data: {
         paymentId: payment._id,
         bank: config.bank,
@@ -49,79 +49,11 @@ router.post("/bank", async (req, res) => {
     });
   } catch (err) {
     console.error("Bank donation error:", err);
-    res.status(500).json({ success: false, error: "Failed to record bank donation" });
+    res.status(500).json({ success: false, error: "Failed to record donation" });
   }
 });
 
-router.post("/mpesa/stk", async (req, res) => {
-  try {
-    const { phone, amount, method, category, donorName, accountReference } = req.body;
-
-    if (!phone || !amount || amount < 1) {
-      return res.status(400).json({ success: false, error: "Phone and valid amount are required" });
-    }
-
-    const validMethods = ["mpesa_paybill", "mpesa_buygoods"];
-    if (!validMethods.includes(method)) {
-      return res.status(400).json({
-        success: false,
-        error: "Method must be mpesa_paybill or mpesa_buygoods",
-      });
-    }
-
-    const payment = await Payment.create({
-      donorName,
-      phone,
-      amount: Number(amount),
-      category: category || "general",
-      method,
-      status: "pending",
-      accountReference: accountReference || `RELI-${Date.now()}`,
-    });
-
-    try {
-      const stk = await initiateStkPush({
-        phone,
-        amount,
-        method,
-        accountReference: payment.accountReference,
-        donorName,
-      });
-
-      payment.status = "initiated";
-      payment.checkoutRequestId = stk.CheckoutRequestID;
-      payment.merchantRequestId = stk.MerchantRequestID;
-      payment.resultDesc = stk.ResponseDescription;
-      await payment.save();
-
-      res.json({
-        success: true,
-        message: stk.CustomerMessage || "STK push sent. Check your phone to complete payment.",
-        data: {
-          paymentId: payment._id,
-          checkoutRequestId: stk.CheckoutRequestID,
-          responseCode: stk.ResponseCode,
-        },
-      });
-    } catch (mpesaErr) {
-      payment.status = "failed";
-      payment.resultDesc = mpesaErr.message;
-      await payment.save();
-
-      const isConfigError = mpesaErr.message?.includes("not configured");
-      res.status(isConfigError ? 503 : 502).json({
-        success: false,
-        error: isConfigError
-          ? "M-Pesa is not fully configured. Use bank transfer or configure Daraja API credentials."
-          : "M-Pesa STK push failed. Please try again.",
-        details: process.env.NODE_ENV === "development" ? mpesaErr.message : undefined,
-      });
-    }
-  } catch (err) {
-    console.error("STK error:", err);
-    res.status(500).json({ success: false, error: "Payment initiation failed" });
-  }
-});
+// STK Push endpoint removed. M-Pesa methods should use the /payments/bank endpoint to record transfers.
 
 router.post("/mpesa/callback", async (req, res) => {
   try {
