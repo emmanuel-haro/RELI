@@ -4,6 +4,10 @@ import cors from "cors";
 import { connectDB } from "./config/db.js";
 import messageRoutes from "./routes/messages.js";
 import paymentRoutes from "./routes/payments.js";
+import dns from "dns";
+
+dns.setServers(["1.1.1.1", "8.8.8.8"]);
+
 
 const app = express();
 const PORT = process.env.PORT || 5000;
