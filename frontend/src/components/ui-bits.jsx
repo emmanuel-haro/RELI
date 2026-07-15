@@ -2,7 +2,7 @@ import { motion } from "framer-motion";
 
 export function PageHero({ eyebrow, title, subtitle }) {
   return (
-    <section className="relative overflow-hidden bg-gradient-hero">
+    <section className="relative w-full overflow-hidden bg-gradient-hero">
       <div className="pointer-events-none absolute -left-20 top-0 h-72 w-72 rounded-full bg-brand-yellow/30 blur-3xl animate-blob" />
       <div className="pointer-events-none absolute -right-10 bottom-0 h-72 w-72 rounded-full bg-brand-blue/30 blur-3xl animate-blob" />
       <div className="pointer-events-none absolute left-1/2 top-1/2 h-96 w-96 -translate-x-1/2 -translate-y-1/2 rounded-full bg-white/5 animate-spin-slow" />
@@ -62,7 +62,7 @@ export function Reveal({ children, delay = 0, direction = "up" }) {
 
 export function Section({ children, className = "" }) {
   return (
-    <section className={`mx-auto max-w-7xl px-4 py-16 md:px-8 ${className}`}>{children}</section>
+    <section className={`mx-auto w-full max-w-7xl px-4 py-16 sm:px-6 md:px-8 ${className}`}>{children}</section>
   );
 }
 

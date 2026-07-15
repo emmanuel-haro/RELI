@@ -24,7 +24,7 @@ export function Navbar() {
   const [open, setOpen] = useState(false);
 
   return (
-    <header className="sticky top-0 z-50 border-b border-border/60 bg-background/80 backdrop-blur-lg">
+    <header className="fixed inset-x-0 top-0 z-[100] border-b border-border/60 bg-background/80 backdrop-blur-lg">
       <nav className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-4 py-3 md:px-8">
         <Link to="/" className="flex items-center gap-3" onClick={() => setOpen(false)}>
           <ReliLogo className="h-11 w-11 rounded-full object-cover shadow-soft" />

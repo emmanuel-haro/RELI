@@ -20,7 +20,7 @@ export default function App() {
   const location = useLocation();
 
   return (
-    <div className="flex min-h-screen flex-col">
+    <div className="flex min-h-screen w-full flex-col overflow-x-hidden">
       <FloatingParticles />
       <ScrollToTop />
       <Navbar />

@@ -8,9 +8,10 @@ import dns from "dns";
 
 dns.setServers(["1.1.1.1", "8.8.8.8"]);
 
-
 const app = express();
 const PORT = process.env.PORT || 5000;
+
+app.set("trust proxy", 1);
 
 app.use(
   cors({
@@ -40,13 +41,13 @@ app.use((err, _req, res, _next) => {
 async function start() {
   try {
     await connectDB();
-    app.listen(PORT, () => {
-      console.log(`RELI backend running on http://localhost:${PORT}`);
-    });
   } catch (err) {
-    console.error("Failed to start server:", err.message);
-    process.exit(1);
+    console.warn("MongoDB connection failed at startup; continuing with limited functionality:", err.message);
   }
+
+  app.listen(PORT, () => {
+    console.log(`RELI backend running on http://localhost:${PORT}`);
+  });
 }
 
 start();

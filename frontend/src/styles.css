@@ -61,12 +61,22 @@
 }
 
 @layer base {
+  *, *::before, *::after { box-sizing: border-box; }
   * { border-color: var(--color-border); }
+  html, body, #root {
+    width: 100%;
+    min-height: 100%;
+  }
   body {
+    margin: 0;
+    padding: 0;
     background-color: var(--color-background);
     color: var(--color-foreground);
+    min-height: 100dvh;
     overflow-x: hidden;
   }
+  img, svg, video { display: block; max-width: 100%; }
+  a { color: inherit; }
 }
 
 @layer utilities {
