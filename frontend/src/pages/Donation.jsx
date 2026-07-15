@@ -60,10 +60,10 @@ export default function Donation() {
         paybill: "126914",
         till: "4062256",
         bank: {
-          name: "Kenya Commercial Bank",
-          accountName: "Hope for life Agency account",
-          accountNumber: "1234567890",
-          branch: "Kilifi Branch",
+          name: "Kenya Commercial Bank (KCB)",
+          accountName: "Hope for Life",
+          accountNumber: "1230645861",
+          branch: "Kilifi",
           swift: "KCBLKENX",
         },
       }));
