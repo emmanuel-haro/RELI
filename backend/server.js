@@ -43,7 +43,6 @@ const corsOptions = {
 };
 
 app.use(cors(corsOptions));
-app.options("/:path(*)", cors(corsOptions));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
