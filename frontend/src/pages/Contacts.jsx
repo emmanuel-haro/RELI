@@ -11,12 +11,14 @@ export default function Contacts() {
   const [sent, setSent] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [warning, setWarning] = useState("");
   const counts = useVisitorCounter();
 
   async function handleSubmit(e) {
     e.preventDefault();
     setLoading(true);
     setError("");
+    setWarning("");
 
     const form = e.target;
     const body = {
@@ -27,7 +29,8 @@ export default function Contacts() {
     };
 
     try {
-      await api.sendMessage(body);
+      const res = await api.sendMessage(body);
+      setWarning(res.warning || "");
       setSent(true);
       form.reset();
     } catch (err) {
@@ -90,7 +93,12 @@ export default function Contacts() {
                   <CheckCircle2 className="h-12 w-12 text-brand-green" />
                   <p className="font-semibold text-foreground">Thank you! Your message has been received.</p>
                   <p className="text-sm text-muted-foreground">We will get back to you as soon as possible.</p>
-                  <button onClick={() => setSent(false)} className="mt-2 text-sm font-semibold text-primary hover:underline">
+                  {warning && (
+                <div className="mt-4 w-full rounded-2xl bg-warning/10 px-4 py-3 text-sm text-warning">
+                  <strong>Email notice:</strong> {warning}
+                </div>
+              )}
+              <button onClick={() => { setSent(false); setWarning(""); }} className="mt-2 text-sm font-semibold text-primary hover:underline">
                     Send another message
                   </button>
                 </motion.div>
