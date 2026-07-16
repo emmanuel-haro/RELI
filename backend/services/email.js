@@ -1,7 +1,7 @@
 import nodemailer from "nodemailer";
 
 let transporter = null;
-const EMAIL_TIMEOUT_MS = Number(process.env.SMTP_TIMEOUT_MS) || 60000;
+const EMAIL_TIMEOUT_MS = Math.max(Number(process.env.SMTP_TIMEOUT_MS) || 60000, 60000);
 
 function withTimeout(promise, ms, label) {
   return Promise.race([
