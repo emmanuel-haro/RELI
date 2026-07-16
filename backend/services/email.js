@@ -16,20 +16,42 @@ function resetTransporter() {
   transporter = null;
 }
 
+function inferSmtpHost(user, host) {
+  const normalizedHost = host?.trim();
+  if (normalizedHost && !normalizedHost.includes("@")) {
+    return normalizedHost;
+  }
+  if (!user) return null;
+
+  const lowerUser = user.toLowerCase();
+  if (lowerUser.endsWith("@gmail.com")) return "smtp.gmail.com";
+  if (lowerUser.endsWith("@outlook.com") || lowerUser.endsWith("@hotmail.com") || lowerUser.endsWith("@live.com") || lowerUser.endsWith("@msn.com")) {
+    return "smtp.office365.com";
+  }
+  return null;
+}
+
 function getTransporter() {
   if (transporter) return transporter;
   const { SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASS } = process.env;
-  if (!SMTP_HOST || !SMTP_USER || !SMTP_PASS) return null;
+  const smtpHost = inferSmtpHost(SMTP_USER, SMTP_HOST);
+
+  if (!smtpHost || !SMTP_USER || !SMTP_PASS) {
+    console.warn("SMTP is not configured correctly. Verify SMTP_HOST, SMTP_USER, and SMTP_PASS.");
+    return null;
+  }
 
   transporter = nodemailer.createTransport({
-    host: SMTP_HOST,
+    host: smtpHost,
     port: Number(SMTP_PORT) || 587,
-    secure: false,
+    secure: Number(SMTP_PORT) === 465,
     auth: { user: SMTP_USER, pass: SMTP_PASS },
     connectionTimeout: EMAIL_TIMEOUT_MS,
     greetingTimeout: EMAIL_TIMEOUT_MS,
     socketTimeout: EMAIL_TIMEOUT_MS,
+    tls: { rejectUnauthorized: false },
   });
+
   return transporter;
 }
 

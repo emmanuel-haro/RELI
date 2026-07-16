@@ -96,6 +96,7 @@ export default function Donation() {
         methodLabel: res.data?.paymentMethod || methodLabels[method] || "Donation",
         message: res.message,
         reference: res.data?.reference,
+        warning: res.warning,
       });
     } catch (err) {
       setError(err.message);
@@ -205,6 +206,11 @@ export default function Donation() {
             <p className="mt-3 font-semibold text-foreground">{success.message}</p>
             {success.reference && (
               <p className="mt-2 text-sm text-muted-foreground">Reference: <strong>{success.reference}</strong></p>
+            )}
+            {success.warning && (
+              <div className="mt-4 rounded-2xl bg-warning/10 px-4 py-3 text-sm text-warning">
+                <strong>Email notice:</strong> {success.warning}
+              </div>
             )}
           </motion.div>
         )}
