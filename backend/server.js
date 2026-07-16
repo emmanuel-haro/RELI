@@ -4,6 +4,7 @@ import cors from "cors";
 import { connectDB } from "./config/db.js";
 import messageRoutes from "./routes/messages.js";
 import paymentRoutes from "./routes/payments.js";
+import { testSmtp } from "./services/email.js";
 import dns from "dns";
 
 dns.setServers(["1.1.1.1", "8.8.8.8"]);
@@ -69,6 +70,17 @@ app.get("/api/health", (_req, res) => {
 
 app.use("/api/messages", messageRoutes);
 app.use("/api/payments", paymentRoutes);
+
+// Admin SMTP test endpoint — returns transporter verification status
+app.get("/api/admin/test-smtp", async (_req, res) => {
+  try {
+    const result = await testSmtp();
+    res.json({ success: true, data: result });
+  } catch (err) {
+    console.error("Admin SMTP test failed:", err);
+    res.status(500).json({ success: false, error: err?.message || String(err) });
+  }
+});
 
 app.use((_req, res) => {
   res.status(404).json({ success: false, error: "Route not found" });

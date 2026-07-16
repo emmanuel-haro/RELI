@@ -208,3 +208,17 @@ export async function sendDonationConfirmation({ email, donorName, amount, categ
 
   return { sent: true };
 }
+
+export async function testSmtp() {
+  const transport = getTransporter();
+  if (!transport) return { available: false, verified: false, error: "SMTP is not configured" };
+
+  try {
+    await withTimeout(transport.verify(), EMAIL_TIMEOUT_MS, "SMTP verify");
+    return { available: true, verified: true };
+  } catch (err) {
+    const code = err?.code || "UNKNOWN";
+    const message = err?.message || String(err);
+    return { available: true, verified: false, error: `${code}: ${message}` };
+  }
+}
