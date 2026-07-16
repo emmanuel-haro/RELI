@@ -15,13 +15,14 @@ app.set("trust proxy", 1);
 
 const allowedOrigins = process.env.CLIENT_URL
   ? process.env.CLIENT_URL.split(",").map((origin) => origin.trim())
-  : ["http://localhost:5173"];
-const allowAnyOrigin = allowedOrigins.includes("*");
+  : null;
 
 if (!process.env.CLIENT_URL) {
   console.warn(
-    "CLIENT_URL is not set. Backend CORS will only allow http://localhost:5173 by default.",
+    "CLIENT_URL is not set. Backend CORS will allow any origin by default. For production, set CLIENT_URL to your deployed frontend origin(s).",
   );
+} else {
+  console.log(`Backend CORS allowed origins: ${allowedOrigins.join(", ")}`);
 }
 
 const corsOptions = {
@@ -29,7 +30,7 @@ const corsOptions = {
     if (!origin) {
       return callback(null, true);
     }
-    if (allowAnyOrigin || allowedOrigins.includes(origin)) {
+    if (!allowedOrigins || allowedOrigins.includes(origin)) {
       return callback(null, true);
     }
     const error = new Error(`Origin ${origin} not allowed by CORS`);
