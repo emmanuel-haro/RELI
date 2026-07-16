@@ -59,13 +59,15 @@ function getTransporter() {
 
   transporter = nodemailer.createTransport(transportOptions);
   console.log(`Created SMTP transporter using host=${smtpHost}, port=${SMTP_PORT || 587}`);
-  // Attempt a quick verification to fail fast with useful diagnostics
-  try {
-    await withTimeout(transporter.verify(), EMAIL_TIMEOUT_MS, "SMTP verify");
-    console.log("SMTP transporter verified successfully");
-  } catch (err) {
-    console.error("SMTP verify failed:", err && (err.code || err.message) ? `${err.code || "NO_CODE"}: ${err.message}` : err);
-  }
+  // Attempt a quick verification (non-blocking) to provide diagnostics without using top-level await
+  withTimeout(transporter.verify(), EMAIL_TIMEOUT_MS, "SMTP verify")
+    .then(() => console.log("SMTP transporter verified successfully"))
+    .catch((err) => {
+      console.error(
+        "SMTP verify failed:",
+        err && (err.code || err.message) ? `${err.code || "NO_CODE"}: ${err.message}` : err,
+      );
+    });
   return transporter;
 }
 
