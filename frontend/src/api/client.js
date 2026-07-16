@@ -1,4 +1,9 @@
-const API_BASE = import.meta.env.VITE_API_URL || "/api";
+const rawApiBase = import.meta.env.VITE_API_URL?.replace(/\/+$|^\s+|\s+$/g, "");
+const API_BASE = rawApiBase
+  ? rawApiBase.endsWith("/api")
+    ? rawApiBase
+    : `${rawApiBase}/api`
+  : "/api";
 
 async function request(path, options = {}) {
   try {
