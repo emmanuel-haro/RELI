@@ -7,8 +7,6 @@ import paymentRoutes from "./routes/payments.js";
 import { testSmtp } from "./services/email.js";
 import dns from "dns";
 
-dns.setServers(["1.1.1.1", "8.8.8.8"]);
-
 const app = express();
 const PORT = process.env.PORT || 5000;
 
