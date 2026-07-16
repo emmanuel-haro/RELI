@@ -42,11 +42,15 @@ function getTransporter() {
   }
 
   const transportOptions = {
+    host: smtpHost,
+    port: Number(SMTP_PORT) || 587,
+    secure: Number(SMTP_PORT) === 465,
     auth: { user: SMTP_USER, pass: SMTP_PASS },
     connectionTimeout: EMAIL_TIMEOUT_MS,
     greetingTimeout: EMAIL_TIMEOUT_MS,
     socketTimeout: EMAIL_TIMEOUT_MS,
-    tls: { rejectUnauthorized: false },
+    tls: { rejectUnauthorized: process.env.SMTP_TLS_REJECT_UNAUTHORIZED !== "false" },
+    logger: process.env.NODE_ENV !== "production", // Log SMTP commands in development
   };
 
   if (smtpHost === "smtp.gmail.com") {
@@ -54,11 +58,12 @@ function getTransporter() {
   } else {
     transportOptions.host = smtpHost;
     transportOptions.port = Number(SMTP_PORT) || 587;
-    transportOptions.secure = Number(SMTP_PORT) === 465;
   }
 
   transporter = nodemailer.createTransport(transportOptions);
-  console.log(`Created SMTP transporter using host=${smtpHost}, port=${SMTP_PORT || 587}`);
+  console.log(
+    `Created SMTP transporter: host=${transportOptions.host}, port=${transportOptions.port}, secure=${transportOptions.secure}, user=${SMTP_USER}, tls.rejectUnauthorized=${transportOptions.tls.rejectUnauthorized}`,
+  );
   // Attempt a quick verification (non-blocking) to provide diagnostics without using top-level await
   withTimeout(transporter.verify(), EMAIL_TIMEOUT_MS, "SMTP verify")
     .then(() => console.log("SMTP transporter verified successfully"))
