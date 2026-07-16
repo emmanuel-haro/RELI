@@ -1,15 +1,22 @@
 const API_BASE = import.meta.env.VITE_API_URL || "/api";
 
 async function request(path, options = {}) {
-  const res = await fetch(`${API_BASE}${path}`, {
-    headers: { "Content-Type": "application/json", ...options.headers },
-    ...options,
-  });
-  const data = await res.json().catch(() => ({}));
-  if (!res.ok) {
-    throw new Error(data.error || data.message || "Request failed");
+  try {
+    const res = await fetch(`${API_BASE}${path}`, {
+      headers: { "Content-Type": "application/json", ...options.headers },
+      ...options,
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) {
+      throw new Error(data.error || data.message || "Request failed");
+    }
+    return data;
+  } catch (err) {
+    if (err instanceof TypeError) {
+      throw new Error(`Network error: ${err.message}`);
+    }
+    throw err;
   }
-  return data;
 }
 
 export const api = {
