@@ -52,14 +52,7 @@ router.post("/bank", async (req, res) => {
       reference: payment.accountReference,
     });
 
-    if (!emailResult.sent) {
-      return res.status(502).json({
-        success: false,
-        error: `Donation saved, but email delivery failed: ${emailResult.error || "unknown SMTP error"}`,
-      });
-    }
-
-    res.status(201).json({
+    const responsePayload = {
       success: true,
       message: `${methodLabel} payment recorded. Thank you — we will acknowledge your gift.`,
       data: {
@@ -68,7 +61,14 @@ router.post("/bank", async (req, res) => {
         bank: config.bank,
         reference: payment.accountReference,
       },
-    });
+    };
+
+    if (!emailResult.sent) {
+      console.warn("Donation recorded but email failed:", emailResult.error);
+      responsePayload.warning = `Donation saved, but email delivery failed: ${emailResult.error || "unknown SMTP error"}`;
+    }
+
+    res.status(201).json(responsePayload);
   } catch (err) {
     console.error("Bank donation error:", err);
     res.status(500).json({ success: false, error: "Failed to record donation" });
