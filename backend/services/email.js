@@ -59,6 +59,13 @@ function getTransporter() {
 
   transporter = nodemailer.createTransport(transportOptions);
   console.log(`Created SMTP transporter using host=${smtpHost}, port=${SMTP_PORT || 587}`);
+  // Attempt a quick verification to fail fast with useful diagnostics
+  try {
+    await withTimeout(transporter.verify(), EMAIL_TIMEOUT_MS, "SMTP verify");
+    console.log("SMTP transporter verified successfully");
+  } catch (err) {
+    console.error("SMTP verify failed:", err && (err.code || err.message) ? `${err.code || "NO_CODE"}: ${err.message}` : err);
+  }
   return transporter;
 }
 
@@ -67,9 +74,12 @@ async function sendOneMail(transport, options, label) {
     await withTimeout(transport.sendMail(options), EMAIL_TIMEOUT_MS, label);
     return { sent: true };
   } catch (err) {
-    console.error(`${label} failed:`, err.message);
+    // Log full error object for diagnostics, but return a concise code+message to callers
+    console.error(`${label} failed:`, err);
     resetTransporter();
-    return { sent: false, error: err.message };
+    const code = err?.code || (err?.response && err.response.code) || "UNKNOWN";
+    const message = err?.message || String(err);
+    return { sent: false, error: `${code}: ${message}` };
   }
 }
 
