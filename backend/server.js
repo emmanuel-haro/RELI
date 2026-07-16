@@ -16,23 +16,34 @@ app.set("trust proxy", 1);
 const allowedOrigins = process.env.CLIENT_URL
   ? process.env.CLIENT_URL.split(",").map((origin) => origin.trim())
   : ["http://localhost:5173"];
+const allowAnyOrigin = allowedOrigins.includes("*");
+
 if (!process.env.CLIENT_URL) {
   console.warn(
     "CLIENT_URL is not set. Backend CORS will only allow http://localhost:5173 by default.",
   );
 }
 
-app.use(
-  cors({
-    origin: (origin, callback) => {
-      if (!origin || allowedOrigins.includes(origin)) {
-        return callback(null, true);
-      }
-      callback(new Error(`Origin ${origin} not allowed by CORS`));
-    },
-    credentials: true,
-  }),
-);
+const corsOptions = {
+  origin: (origin, callback) => {
+    if (!origin) {
+      return callback(null, true);
+    }
+    if (allowAnyOrigin || allowedOrigins.includes(origin)) {
+      return callback(null, true);
+    }
+    const error = new Error(`Origin ${origin} not allowed by CORS`);
+    error.status = 403;
+    callback(error);
+  },
+  methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+  allowedHeaders: ["Content-Type", "Authorization"],
+  credentials: true,
+  optionsSuccessStatus: 204,
+};
+
+app.use(cors(corsOptions));
+app.options("*", cors(corsOptions));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
