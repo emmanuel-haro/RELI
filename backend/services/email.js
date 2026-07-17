@@ -1,7 +1,12 @@
 import nodemailer from "nodemailer";
+import dns from "dns";
 
 let transporter = null;
-const EMAIL_TIMEOUT_MS = Math.max(Number(process.env.SMTP_TIMEOUT_MS) || 60000, 60000);
+
+const EMAIL_TIMEOUT_MS = Math.max(Number(process.env.SMTP_TIMEOUT_MS) || 25000, 10000);
+const NOTIFY_EMAIL = process.env.NOTIFY_EMAIL || "hope4lifeagency@gmail.com";
+const EMAIL_FROM = process.env.EMAIL_FROM || process.env.SMTP_USER || NOTIFY_EMAIL;
+const EMAIL_FROM_NAME = process.env.EMAIL_FROM_NAME || "RELI Website";
 
 function withTimeout(promise, ms, label) {
   return Promise.race([
@@ -18,76 +23,231 @@ function resetTransporter() {
 
 function inferSmtpHost(user, host) {
   const normalizedHost = host?.trim();
-  if (normalizedHost && !normalizedHost.includes("@")) {
+  if (normalizedHost?.includes("@")) {
+    console.warn(
+      `SMTP_HOST "${normalizedHost}" looks like an email address, not a mail server. ` +
+        "Use smtp.gmail.com (Gmail) or smtp-relay.brevo.com (Brevo). Inferring host from SMTP_USER instead.",
+    );
+  } else if (normalizedHost) {
     return normalizedHost;
   }
   if (!user) return null;
 
   const lowerUser = user.toLowerCase();
-  if (lowerUser.endsWith("@gmail.com")) return "smtp.gmail.com";
-  if (lowerUser.endsWith("@outlook.com") || lowerUser.endsWith("@hotmail.com") || lowerUser.endsWith("@live.com") || lowerUser.endsWith("@msn.com")) {
+  if (lowerUser.endsWith("@gmail.com") || lowerUser.endsWith("@googlemail.com")) {
+    return "smtp.gmail.com";
+  }
+  if (
+    lowerUser.endsWith("@outlook.com") ||
+    lowerUser.endsWith("@hotmail.com") ||
+    lowerUser.endsWith("@live.com") ||
+    lowerUser.endsWith("@msn.com")
+  ) {
     return "smtp.office365.com";
   }
+  if (lowerUser.endsWith("@yahoo.com")) return "smtp.mail.yahoo.com";
   return null;
+}
+
+function resolveEmailProvider() {
+  const forced = process.env.EMAIL_PROVIDER?.trim().toLowerCase();
+  if (forced === "sendgrid" || forced === "resend" || forced === "smtp") return forced;
+  if (process.env.SENDGRID_API_KEY?.trim()) return "sendgrid";
+  if (process.env.RESEND_API_KEY?.trim()) return "resend";
+  return "smtp";
+}
+
+export function getEmailProviderInfo() {
+  const provider = resolveEmailProvider();
+  const info = { provider, from: EMAIL_FROM, notify: NOTIFY_EMAIL };
+
+  if (provider === "sendgrid") {
+    info.configured = Boolean(process.env.SENDGRID_API_KEY?.trim());
+    info.note = "HTTP email via SendGrid (works on Render free tier)";
+  } else if (provider === "resend") {
+    info.configured = Boolean(process.env.RESEND_API_KEY?.trim());
+    info.note = "HTTP email via Resend (works on Render free tier)";
+  } else {
+    const smtpHost = inferSmtpHost(process.env.SMTP_USER, process.env.SMTP_HOST);
+    info.configured = Boolean(smtpHost && process.env.SMTP_USER && process.env.SMTP_PASS);
+    info.smtpHost = smtpHost;
+    info.smtpPort = Number(process.env.SMTP_PORT) || 587;
+    info.note =
+      "SMTP transport — blocked on Render free tier. Set SENDGRID_API_KEY or RESEND_API_KEY for production.";
+  }
+
+  return info;
 }
 
 function getTransporter() {
   if (transporter) return transporter;
+
   const { SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASS } = process.env;
   const smtpHost = inferSmtpHost(SMTP_USER, SMTP_HOST);
 
   if (!smtpHost || !SMTP_USER || !SMTP_PASS) {
-    console.warn("SMTP is not configured correctly. Verify SMTP_HOST, SMTP_USER, and SMTP_PASS.");
+    console.warn("SMTP is not configured. Set SMTP_USER + SMTP_PASS, or use SENDGRID_API_KEY / RESEND_API_KEY.");
     return null;
   }
 
-  const transportOptions = {
+  const port = Number(SMTP_PORT) || 587;
+  transporter = nodemailer.createTransport({
     host: smtpHost,
-    port: Number(SMTP_PORT) || 587,
-    secure: Number(SMTP_PORT) === 465,
+    port,
+    secure: port === 465,
     auth: { user: SMTP_USER, pass: SMTP_PASS },
-    connectionTimeout: EMAIL_TIMEOUT_MS,
-    greetingTimeout: EMAIL_TIMEOUT_MS,
+    connectionTimeout: 15000,
+    greetingTimeout: 15000,
     socketTimeout: EMAIL_TIMEOUT_MS,
-    tls: { rejectUnauthorized: process.env.SMTP_TLS_REJECT_UNAUTHORIZED !== "false" },
-    logger: process.env.NODE_ENV !== "production", // Log SMTP commands in development
-  };
+    requireTLS: port !== 465,
+    tls: { minVersion: "TLSv1.2" },
+    lookup: (hostname, _options, callback) => {
+      dns.lookup(hostname, { family: 4 }, callback);
+    },
+  });
 
-  if (smtpHost === "smtp.gmail.com") {
-    transportOptions.service = "gmail";
-  } else {
-    transportOptions.host = smtpHost;
-    transportOptions.port = Number(SMTP_PORT) || 587;
-  }
-
-  transporter = nodemailer.createTransport(transportOptions);
-  console.log(
-    `Created SMTP transporter: host=${transportOptions.host}, port=${transportOptions.port}, secure=${transportOptions.secure}, user=${SMTP_USER}, tls.rejectUnauthorized=${transportOptions.tls.rejectUnauthorized}`,
-  );
-  // Attempt a quick verification (non-blocking) to provide diagnostics without using top-level await
-  withTimeout(transporter.verify(), EMAIL_TIMEOUT_MS, "SMTP verify")
-    .then(() => console.log("SMTP transporter verified successfully"))
-    .catch((err) => {
-      console.error(
-        "SMTP verify failed:",
-        err && (err.code || err.message) ? `${err.code || "NO_CODE"}: ${err.message}` : err,
-      );
-    });
+  console.log(`Created SMTP transporter: host=${smtpHost}, port=${port}`);
   return transporter;
 }
 
-async function sendOneMail(transport, options, label) {
-  try {
-    await withTimeout(transport.sendMail(options), EMAIL_TIMEOUT_MS, label);
-    return { sent: true };
-  } catch (err) {
-    // Log full error object for diagnostics, but return a concise code+message to callers
-    console.error(`${label} failed:`, err);
-    resetTransporter();
-    const code = err?.code || (err?.response && err.response.code) || "UNKNOWN";
-    const message = err?.message || String(err);
-    return { sent: false, error: `${code}: ${message}` };
+async function sendViaSendGrid({ to, subject, text, html, replyTo, fromName = EMAIL_FROM_NAME }) {
+  const apiKey = process.env.SENDGRID_API_KEY?.trim();
+  if (!apiKey) return { sent: false, error: "SENDGRID_API_KEY is not set" };
+
+  const payload = {
+    personalizations: [{ to: [{ email: to }] }],
+    from: { email: EMAIL_FROM, name: fromName },
+    subject,
+    content: [
+      { type: "text/plain", value: text },
+      { type: "text/html", value: html },
+    ],
+  };
+  if (replyTo) payload.reply_to = { email: replyTo };
+
+  const res = await withTimeout(
+    fetch("https://api.sendgrid.com/v3/mail/send", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${apiKey}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(payload),
+    }),
+    EMAIL_TIMEOUT_MS,
+    "SendGrid API",
+  );
+
+  if (!res.ok) {
+    const body = await res.text().catch(() => "");
+    throw new Error(`SendGrid ${res.status}: ${body || res.statusText}`);
   }
+  return { sent: true };
+}
+
+async function sendViaResend({ to, subject, text, html, replyTo, fromName = EMAIL_FROM_NAME }) {
+  const apiKey = process.env.RESEND_API_KEY?.trim();
+  if (!apiKey) return { sent: false, error: "RESEND_API_KEY is not set" };
+
+  const payload = {
+    from: `${fromName} <${EMAIL_FROM}>`,
+    to: [to],
+    subject,
+    text,
+    html,
+  };
+  if (replyTo) payload.reply_to = replyTo;
+
+  const res = await withTimeout(
+    fetch("https://api.resend.com/emails", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${apiKey}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(payload),
+    }),
+    EMAIL_TIMEOUT_MS,
+    "Resend API",
+  );
+
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) {
+    throw new Error(data.message || `Resend ${res.status}: ${res.statusText}`);
+  }
+  return { sent: true };
+}
+
+async function sendViaSmtp({ to, subject, text, html, replyTo, fromName = EMAIL_FROM_NAME }) {
+  const transport = getTransporter();
+  if (!transport) return { sent: false, error: "SMTP is not configured" };
+
+  await withTimeout(
+    transport.sendMail({
+      from: `"${fromName}" <${EMAIL_FROM}>`,
+      to,
+      replyTo,
+      subject,
+      text,
+      html,
+    }),
+    EMAIL_TIMEOUT_MS,
+    "SMTP send",
+  );
+  return { sent: true };
+}
+
+async function sendEmail(options) {
+  const provider = resolveEmailProvider();
+  const senders = {
+    sendgrid: sendViaSendGrid,
+    resend: sendViaResend,
+    smtp: sendViaSmtp,
+  };
+
+  try {
+    return await senders[provider](options);
+  } catch (err) {
+    console.error(`Email send failed (${provider}):`, err);
+    if (provider === "smtp") resetTransporter();
+
+    const code = err?.code || "UNKNOWN";
+    const message = err?.message || String(err);
+    let hint = "";
+
+    if (provider === "smtp" && /timed out/i.test(message)) {
+      hint =
+        " Render free tier blocks SMTP ports. Add SENDGRID_API_KEY or RESEND_API_KEY in your Render environment.";
+    } else if (provider === "smtp" && /ENOTFOUND/i.test(message)) {
+      hint = " Set SMTP_HOST=smtp.gmail.com (not your email address).";
+    }
+
+    return { sent: false, error: `${code}: ${message}${hint}` };
+  }
+}
+
+export async function sendContactNotification({ name, email, subject, message }) {
+  const adminResult = await sendEmail({
+    to: NOTIFY_EMAIL,
+    replyTo: email,
+    subject: `[RELI Contact] ${subject}`,
+    text: `From: ${name} <${email}>\n\n${message}`,
+    html: `<p><strong>From:</strong> ${name} &lt;${email}&gt;</p><p><strong>Subject:</strong> ${subject}</p><p>${message.replace(/\n/g, "<br>")}</p>`,
+    fromName: "RELI Website",
+  });
+
+  if (!adminResult.sent) return adminResult;
+
+  const donorResult = await sendEmail({
+    to: email,
+    subject: "We received your message",
+    text: `Hello ${name},\n\nThank you for contacting RELI. We have received your message and will respond as soon as possible.\n\nSubject: ${subject}\n\nWith gratitude,\nRELI Team`,
+    html: `<p>Hello ${name},</p><p>Thank you for contacting RELI. We have received your message and will respond as soon as possible.</p><p><strong>Subject:</strong> ${subject}</p><p>With gratitude,<br/>RELI Team</p>`,
+    fromName: "RELI Team",
+  });
+
+  if (!donorResult.sent) return { sent: true, partial: true, error: donorResult.error };
+  return { sent: true };
 }
 
 function getDonationMethodLabel(method) {
@@ -97,133 +257,95 @@ function getDonationMethodLabel(method) {
   return method || "Donation";
 }
 
-export async function sendContactNotification({ name, email, subject, message }) {
-  const transport = getTransporter();
-  const notifyEmail = process.env.NOTIFY_EMAIL || "hope4lifeagency@gmail.com";
-  if (!transport) {
-    console.log("SMTP not configured — message saved to database only");
-    return { sent: false, error: "SMTP is not configured" };
-  }
-
-  const adminResult = await sendOneMail(
-    transport,
-    {
-      from: `"RELI Website" <${process.env.SMTP_USER}>`,
-      to: notifyEmail,
-      replyTo: email,
-      subject: `[RELI Contact] ${subject}`,
-      text: `From: ${name} <${email}>\n\n${message}`,
-      html: `<p><strong>From:</strong> ${name} &lt;${email}&gt;</p><p><strong>Subject:</strong> ${subject}</p><p>${message.replace(/\n/g, "<br>")}</p>`,
-    },
-    "Contact admin email",
-  );
-
-  if (!adminResult.sent) {
-    return { sent: false, error: adminResult.error };
-  }
-
-  const donorResult = await sendOneMail(
-    transport,
-    {
-      from: `"RELI Team" <${process.env.SMTP_USER}>`,
-      to: email,
-      subject: "We received your message",
-      text: `Hello ${name},\n\nThank you for contacting RELI. We have received your message and will respond as soon as possible.\n\nSubject: ${subject}\n\nWith gratitude,\nRELI Team`,
-      html: `<p>Hello ${name},</p><p>Thank you for contacting RELI. We have received your message and will respond as soon as possible.</p><p><strong>Subject:</strong> ${subject}</p><p>With gratitude,<br/>RELI Team</p>`,
-    },
-    "Contact confirmation email",
-  );
-
-  if (!donorResult.sent) {
-    return { sent: true, partial: true, error: donorResult.error };
-  }
-
-  return { sent: true };
-}
-
 export async function sendDonationConfirmation({ email, donorName, amount, category, method, reference }) {
-  const transport = getTransporter();
-  const notifyEmail = process.env.NOTIFY_EMAIL || "hope4lifeagency@gmail.com";
-  if (!transport) return { sent: false, error: "SMTP is not configured" };
-
   const displayName = donorName || "Anonymous donor";
   const displayEmail = email || "No donor email provided";
   const displayCategory = category || "general";
   const displayReference = reference || "Not provided";
   const methodLabel = getDonationMethodLabel(method);
 
-  const adminResult = await sendOneMail(
-    transport,
-    {
-      from: `"RELI Website" <${process.env.SMTP_USER}>`,
-      to: notifyEmail,
-      replyTo: email || process.env.SMTP_USER,
-      subject: `[RELI Donation] ${displayName} - KES ${amount} via ${methodLabel}`,
-      text:
-        `A new donation has been recorded.\n\n` +
-        `Donor Name: ${displayName}\n` +
-        `Donor Email: ${displayEmail}\n` +
-        `Donation Category: ${displayCategory}\n` +
-        `Amount: KES ${amount}\n` +
-        `Thank you for donation of KES ${amount} for ${displayCategory} via ${methodLabel}.\n` +
-        `Method: ${methodLabel}\n` +
-        `Reference: ${displayReference}\n`,
-      html:
-        `<p>A new donation has been recorded.</p>` +
-        `<p><strong>Donor Name:</strong> ${displayName}</p>` +
-        `<p><strong>Donor Email:</strong> ${displayEmail}</p>` +
-        `<p><strong>Donation Category:</strong> ${displayCategory}</p>` +
-        `<p><strong>Amount:</strong> KES ${amount}</p>` +
-        `<p><strong>Thank you for donation of:</strong> KES ${amount} for ${displayCategory} via ${methodLabel}</p>` +
-        `<p><strong>Method:</strong> ${methodLabel}</p>` +
-        `<p><strong>Reference:</strong> ${displayReference}</p>`,
-    },
-    "Donation admin email",
-  );
+  const adminResult = await sendEmail({
+    to: NOTIFY_EMAIL,
+    replyTo: email || EMAIL_FROM,
+    subject: `[RELI Donation] ${displayName} - KES ${amount} via ${methodLabel}`,
+    text:
+      `A new donation has been recorded.\n\n` +
+      `Donor Name: ${displayName}\n` +
+      `Donor Email: ${displayEmail}\n` +
+      `Donation Category: ${displayCategory}\n` +
+      `Amount: KES ${amount}\n` +
+      `Method: ${methodLabel}\n` +
+      `Reference: ${displayReference}\n`,
+    html:
+      `<p>A new donation has been recorded.</p>` +
+      `<p><strong>Donor Name:</strong> ${displayName}</p>` +
+      `<p><strong>Donor Email:</strong> ${displayEmail}</p>` +
+      `<p><strong>Donation Category:</strong> ${displayCategory}</p>` +
+      `<p><strong>Amount:</strong> KES ${amount}</p>` +
+      `<p><strong>Method:</strong> ${methodLabel}</p>` +
+      `<p><strong>Reference:</strong> ${displayReference}</p>`,
+    fromName: "RELI Website",
+  });
 
-  if (!adminResult.sent) {
-    return { sent: false, error: adminResult.error };
-  }
+  if (!adminResult.sent) return adminResult;
 
   if (email) {
-    const donorResult = await sendOneMail(
-      transport,
-      {
-        from: `"RELI Website" <${process.env.SMTP_USER}>`,
-        to: email,
-        subject: `Thank you for your donation via ${methodLabel}`,
-        text:
-          `Dear ${displayName},\n\n` +
-          `Thank you for your donation of KES ${amount} for ${displayCategory} via ${methodLabel}.\n` +
-          `Reference: ${displayReference}\n\n` +
-          `With gratitude,\nRELI — Hope for Life Agency`,
-        html:
-          `<p>Dear ${displayName},</p>` +
-          `<p>Thank you for your donation of <strong>KES ${amount}</strong> for <strong>${displayCategory}</strong> via ${methodLabel}.</p>` +
-          `<p><strong>Reference:</strong> ${displayReference}</p>` +
-          `<p>With gratitude,<br/>RELI — Hope for Life Agency</p>`,
-      },
-      "Donation donor email",
-    );
+    const donorResult = await sendEmail({
+      to: email,
+      subject: `Thank you for your donation via ${methodLabel}`,
+      text:
+        `Dear ${displayName},\n\n` +
+        `Thank you for your donation of KES ${amount} for ${displayCategory} via ${methodLabel}.\n` +
+        `Reference: ${displayReference}\n\n` +
+        `With gratitude,\nRELI — Hope for Life Agency`,
+      html:
+        `<p>Dear ${displayName},</p>` +
+        `<p>Thank you for your donation of <strong>KES ${amount}</strong> for <strong>${displayCategory}</strong> via ${methodLabel}.</p>` +
+        `<p><strong>Reference:</strong> ${displayReference}</p>` +
+        `<p>With gratitude,<br/>RELI — Hope for Life Agency</p>`,
+      fromName: "RELI Website",
+    });
 
-    if (!donorResult.sent) {
-      return { sent: true, partial: true, error: donorResult.error };
-    }
+    if (!donorResult.sent) return { sent: true, partial: true, error: donorResult.error };
   }
 
   return { sent: true };
 }
 
 export async function testSmtp() {
-  const transport = getTransporter();
-  if (!transport) return { available: false, verified: false, error: "SMTP is not configured" };
-
-  try {
-    await withTimeout(transport.verify(), EMAIL_TIMEOUT_MS, "SMTP verify");
-    return { available: true, verified: true };
-  } catch (err) {
-    const code = err?.code || "UNKNOWN";
-    const message = err?.message || String(err);
-    return { available: true, verified: false, error: `${code}: ${message}` };
+  const info = getEmailProviderInfo();
+  if (!info.configured) {
+    return { available: false, verified: false, provider: info.provider, error: "Email is not configured", info };
   }
+
+  if (info.provider === "smtp") {
+    const transport = getTransporter();
+    if (!transport) {
+      return { available: false, verified: false, provider: info.provider, error: "SMTP is not configured", info };
+    }
+    try {
+      await withTimeout(transport.verify(), EMAIL_TIMEOUT_MS, "SMTP verify");
+      return { available: true, verified: true, provider: info.provider, info };
+    } catch (err) {
+      const code = err?.code || "UNKNOWN";
+      const message = err?.message || String(err);
+      return { available: true, verified: false, provider: info.provider, error: `${code}: ${message}`, info };
+    }
+  }
+
+  const probe = await sendEmail({
+    to: NOTIFY_EMAIL,
+    subject: "[RELI] Email configuration test",
+    text: "This is a test email from your RELI backend. Email delivery is working.",
+    html: "<p>This is a test email from your <strong>RELI</strong> backend. Email delivery is working.</p>",
+    fromName: "RELI System",
+  });
+
+  return {
+    available: true,
+    verified: probe.sent,
+    provider: info.provider,
+    error: probe.sent ? undefined : probe.error,
+    info,
+  };
 }

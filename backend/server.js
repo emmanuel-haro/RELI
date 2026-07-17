@@ -4,7 +4,7 @@ import cors from "cors";
 import { connectDB } from "./config/db.js";
 import messageRoutes from "./routes/messages.js";
 import paymentRoutes from "./routes/payments.js";
-import { testSmtp } from "./services/email.js";
+import { getEmailProviderInfo, testSmtp } from "./services/email.js";
 import dns from "dns";
 
 dns.setServers(["1.1.1.1", "8.8.8.8"]);
@@ -71,15 +71,19 @@ app.get("/api/health", (_req, res) => {
 app.use("/api/messages", messageRoutes);
 app.use("/api/payments", paymentRoutes);
 
-// Admin SMTP test endpoint — returns transporter verification status
-app.get("/api/admin/test-smtp", async (_req, res) => {
+// Admin email test endpoint — verifies configured provider (SendGrid, Resend, or SMTP)
+app.get("/api/admin/test-email", async (_req, res) => {
   try {
     const result = await testSmtp();
     res.json({ success: true, data: result });
   } catch (err) {
-    console.error("Admin SMTP test failed:", err);
+    console.error("Admin email test failed:", err);
     res.status(500).json({ success: false, error: err?.message || String(err) });
   }
+});
+
+app.get("/api/admin/test-smtp", async (_req, res) => {
+  res.redirect(307, "/api/admin/test-email");
 });
 
 app.use((_req, res) => {
@@ -96,6 +100,18 @@ async function start() {
     await connectDB();
   } catch (err) {
     console.warn("MongoDB connection failed at startup; continuing with limited functionality:", err.message);
+  }
+
+  const emailInfo = getEmailProviderInfo();
+  console.log(
+    `Email provider: ${emailInfo.provider} (${emailInfo.configured ? "configured" : "NOT configured"}) → notify ${emailInfo.notify}`,
+  );
+  if (!emailInfo.configured) {
+    console.warn(
+      "Email delivery is disabled. For Render hosting, set SENDGRID_API_KEY (recommended) or RESEND_API_KEY.",
+    );
+  } else if (emailInfo.provider === "smtp") {
+    console.warn(emailInfo.note);
   }
 
   app.listen(PORT, () => {
