@@ -71,7 +71,7 @@ app.get("/api/health", (_req, res) => {
 app.use("/api/messages", messageRoutes);
 app.use("/api/payments", paymentRoutes);
 
-// Admin email test endpoint — verifies configured provider (SendGrid, Resend, or SMTP)
+// Admin email test endpoint — verifies configured provider (SendGrid or SMTP)
 app.get("/api/admin/test-email", async (_req, res) => {
   try {
     const result = await testSmtp();
@@ -106,9 +106,12 @@ async function start() {
   console.log(
     `Email provider: ${emailInfo.provider} (${emailInfo.configured ? "configured" : "NOT configured"}) → notify ${emailInfo.notify}`,
   );
+  if (emailInfo.keyError) {
+    console.warn(`SendGrid key problem: ${emailInfo.keyError}`);
+  }
   if (!emailInfo.configured) {
     console.warn(
-      "Email delivery is disabled. For Render hosting, set SENDGRID_API_KEY (recommended) or RESEND_API_KEY.",
+      "Email delivery is disabled. For Render hosting, set SENDGRID_API_KEY from SendGrid → Settings → API Keys.",
     );
   } else if (emailInfo.provider === "smtp") {
     console.warn(emailInfo.note);

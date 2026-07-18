@@ -34,7 +34,7 @@ router.post("/", async (req, res) => {
     };
 
     if (!notification.sent) {
-      response.warning = `Message saved, but email delivery failed: ${notification.error || "unknown SMTP error"}`;
+      response.warning = `Message saved, but email delivery failed: ${notification.error || "unknown email error"}`;
     }
 
     res.status(201).json(response);

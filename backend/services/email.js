@@ -21,12 +21,33 @@ function resetTransporter() {
   transporter = null;
 }
 
+function normalizeApiKey(value) {
+  return value?.trim().replace(/^["']|["']$/g, "") || "";
+}
+
+function resolveEmailProvider() {
+  const forced = process.env.EMAIL_PROVIDER?.trim().toLowerCase();
+  if (forced === "sendgrid" || forced === "smtp") return forced;
+  if (normalizeApiKey(process.env.SENDGRID_API_KEY)) return "sendgrid";
+  return "smtp";
+}
+
+function validateSendGridKey(apiKey) {
+  if (!apiKey) return "SENDGRID_API_KEY is not set";
+  if (!apiKey.startsWith("SG.")) {
+    return "SENDGRID_API_KEY must start with SG. — copy it from SendGrid → Settings → API Keys";
+  }
+  if (apiKey.length < 50) {
+    return "SENDGRID_API_KEY looks truncated — copy the full key from SendGrid";
+  }
+  return null;
+}
+
 function inferSmtpHost(user, host) {
   const normalizedHost = host?.trim();
   if (normalizedHost?.includes("@")) {
     console.warn(
-      `SMTP_HOST "${normalizedHost}" looks like an email address, not a mail server. ` +
-        "Use smtp.gmail.com (Gmail) or smtp-relay.brevo.com (Brevo). Inferring host from SMTP_USER instead.",
+      `SMTP_HOST "${normalizedHost}" looks like an email address. Use smtp.sendgrid.net for SendGrid SMTP.`,
     );
   } else if (normalizedHost) {
     return normalizedHost;
@@ -34,9 +55,7 @@ function inferSmtpHost(user, host) {
   if (!user) return null;
 
   const lowerUser = user.toLowerCase();
-  if (lowerUser.endsWith("@gmail.com") || lowerUser.endsWith("@googlemail.com")) {
-    return "smtp.gmail.com";
-  }
+  if (lowerUser.endsWith("@gmail.com") || lowerUser.endsWith("@googlemail.com")) return "smtp.gmail.com";
   if (
     lowerUser.endsWith("@outlook.com") ||
     lowerUser.endsWith("@hotmail.com") ||
@@ -45,16 +64,7 @@ function inferSmtpHost(user, host) {
   ) {
     return "smtp.office365.com";
   }
-  if (lowerUser.endsWith("@yahoo.com")) return "smtp.mail.yahoo.com";
-  return null;
-}
-
-function resolveEmailProvider() {
-  const forced = process.env.EMAIL_PROVIDER?.trim().toLowerCase();
-  if (forced === "sendgrid" || forced === "resend" || forced === "smtp") return forced;
-  if (process.env.SENDGRID_API_KEY?.trim()) return "sendgrid";
-  if (process.env.RESEND_API_KEY?.trim()) return "resend";
-  return "smtp";
+  return "smtp.sendgrid.net";
 }
 
 export function getEmailProviderInfo() {
@@ -62,18 +72,17 @@ export function getEmailProviderInfo() {
   const info = { provider, from: EMAIL_FROM, notify: NOTIFY_EMAIL };
 
   if (provider === "sendgrid") {
-    info.configured = Boolean(process.env.SENDGRID_API_KEY?.trim());
+    const key = normalizeApiKey(process.env.SENDGRID_API_KEY);
+    const keyError = validateSendGridKey(key);
+    info.configured = Boolean(key && !keyError);
+    info.keyError = keyError || undefined;
     info.note = "HTTP email via SendGrid (works on Render free tier)";
-  } else if (provider === "resend") {
-    info.configured = Boolean(process.env.RESEND_API_KEY?.trim());
-    info.note = "HTTP email via Resend (works on Render free tier)";
   } else {
     const smtpHost = inferSmtpHost(process.env.SMTP_USER, process.env.SMTP_HOST);
     info.configured = Boolean(smtpHost && process.env.SMTP_USER && process.env.SMTP_PASS);
     info.smtpHost = smtpHost;
     info.smtpPort = Number(process.env.SMTP_PORT) || 587;
-    info.note =
-      "SMTP transport — blocked on Render free tier. Set SENDGRID_API_KEY or RESEND_API_KEY for production.";
+    info.note = "SMTP transport — blocked on Render free tier. Set SENDGRID_API_KEY for production.";
   }
 
   return info;
@@ -86,7 +95,7 @@ function getTransporter() {
   const smtpHost = inferSmtpHost(SMTP_USER, SMTP_HOST);
 
   if (!smtpHost || !SMTP_USER || !SMTP_PASS) {
-    console.warn("SMTP is not configured. Set SMTP_USER + SMTP_PASS, or use SENDGRID_API_KEY / RESEND_API_KEY.");
+    console.warn("SMTP is not configured. Set SENDGRID_API_KEY for production, or SMTP_* for local dev.");
     return null;
   }
 
@@ -110,17 +119,55 @@ function getTransporter() {
   return transporter;
 }
 
+function formatSendGridError(status, body) {
+  let parsed = {};
+  try {
+    parsed = JSON.parse(body);
+  } catch {
+    parsed = { message: body };
+  }
+
+  const detail =
+    parsed?.errors?.[0]?.message ||
+    parsed?.message ||
+    body ||
+    "request failed";
+
+  if (status === 401) {
+    return (
+      "SendGrid rejected your API key (401). Create a new key at SendGrid → Settings → API Keys " +
+      "(Mail Send full access), paste the full key starting with SG. into Render as SENDGRID_API_KEY, then redeploy."
+    );
+  }
+  if (status === 403) {
+    return (
+      `SendGrid sender not verified (403): ${detail}. ` +
+      "In SendGrid → Settings → Sender Authentication, verify a Single Sender for EMAIL_FROM (" +
+      EMAIL_FROM +
+      "), then wait until status is Verified."
+    );
+  }
+  if (status === 400 && /from|sender|verified/i.test(detail)) {
+    return (
+      `SendGrid sender problem (400): ${detail}. ` +
+      "EMAIL_FROM must exactly match a verified Single Sender or authenticated domain in SendGrid."
+    );
+  }
+  return `SendGrid ${status}: ${detail}`;
+}
+
 async function sendViaSendGrid({ to, subject, text, html, replyTo, fromName = EMAIL_FROM_NAME }) {
-  const apiKey = process.env.SENDGRID_API_KEY?.trim();
-  if (!apiKey) return { sent: false, error: "SENDGRID_API_KEY is not set" };
+  const apiKey = normalizeApiKey(process.env.SENDGRID_API_KEY);
+  const keyError = validateSendGridKey(apiKey);
+  if (keyError) return { sent: false, error: keyError };
 
   const payload = {
     personalizations: [{ to: [{ email: to }] }],
     from: { email: EMAIL_FROM, name: fromName },
     subject,
     content: [
-      { type: "text/plain", value: text },
-      { type: "text/html", value: html },
+      { type: "text/plain", value: text || " " },
+      { type: "text/html", value: html || `<pre>${text || ""}</pre>` },
     ],
   };
   if (replyTo) payload.reply_to = { email: replyTo };
@@ -138,42 +185,10 @@ async function sendViaSendGrid({ to, subject, text, html, replyTo, fromName = EM
     "SendGrid API",
   );
 
-  if (!res.ok) {
+  // SendGrid returns 202 Accepted with an empty body on success
+  if (res.status !== 202 && !res.ok) {
     const body = await res.text().catch(() => "");
-    throw new Error(`SendGrid ${res.status}: ${body || res.statusText}`);
-  }
-  return { sent: true };
-}
-
-async function sendViaResend({ to, subject, text, html, replyTo, fromName = EMAIL_FROM_NAME }) {
-  const apiKey = process.env.RESEND_API_KEY?.trim();
-  if (!apiKey) return { sent: false, error: "RESEND_API_KEY is not set" };
-
-  const payload = {
-    from: `${fromName} <${EMAIL_FROM}>`,
-    to: [to],
-    subject,
-    text,
-    html,
-  };
-  if (replyTo) payload.reply_to = replyTo;
-
-  const res = await withTimeout(
-    fetch("https://api.resend.com/emails", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${apiKey}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(payload),
-    }),
-    EMAIL_TIMEOUT_MS,
-    "Resend API",
-  );
-
-  const data = await res.json().catch(() => ({}));
-  if (!res.ok) {
-    throw new Error(data.message || `Resend ${res.status}: ${res.statusText}`);
+    throw new Error(formatSendGridError(res.status, body));
   }
   return { sent: true };
 }
@@ -199,11 +214,7 @@ async function sendViaSmtp({ to, subject, text, html, replyTo, fromName = EMAIL_
 
 async function sendEmail(options) {
   const provider = resolveEmailProvider();
-  const senders = {
-    sendgrid: sendViaSendGrid,
-    resend: sendViaResend,
-    smtp: sendViaSmtp,
-  };
+  const senders = { sendgrid: sendViaSendGrid, smtp: sendViaSmtp };
 
   try {
     return await senders[provider](options);
@@ -216,10 +227,9 @@ async function sendEmail(options) {
     let hint = "";
 
     if (provider === "smtp" && /timed out/i.test(message)) {
-      hint =
-        " Render free tier blocks SMTP ports. Add SENDGRID_API_KEY or RESEND_API_KEY in your Render environment.";
+      hint = " Render free tier blocks SMTP. Set SENDGRID_API_KEY in your Render environment.";
     } else if (provider === "smtp" && /ENOTFOUND/i.test(message)) {
-      hint = " Set SMTP_HOST=smtp.gmail.com (not your email address).";
+      hint = " Set SMTP_HOST=smtp.sendgrid.net or use SENDGRID_API_KEY instead.";
     }
 
     return { sent: false, error: `${code}: ${message}${hint}` };

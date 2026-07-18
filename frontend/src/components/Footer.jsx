@@ -9,18 +9,29 @@ export function Footer() {
       <div className="mx-auto grid max-w-7xl gap-10 px-4 py-14 md:grid-cols-4 md:px-8">
         <div className="md:col-span-1">
           <motion.div
-            className="flex items-center gap-3"
+            className="flex flex-wrap items-start gap-5"
             initial={{ opacity: 0 }}
             whileInView={{ opacity: 1 }}
             viewport={{ once: true }}
           >
-            <ReliLogo className="h-12 w-12 rounded-full object-cover shadow-soft" />
-            <HopeLogo className="h-12 w-12 rounded-full object-cover shadow-soft" />
+            <div className="flex items-center gap-2">
+              <ReliLogo className="h-12 w-12 rounded-full object-cover shadow-soft" />
+              <div className="leading-tight">
+                <p className="text-sm font-bold text-foreground">RELI</p>
+                <p className="text-xs font-medium text-primary">Restore Hope</p>
+              </div>
+            </div>
+            <div className="flex items-center gap-2">
+              <HopeLogo className="h-12 w-12 rounded-full object-cover shadow-soft" />
+              <div className="leading-tight">
+                <p className="text-sm font-bold text-foreground">Hope4Life</p>
+                <p className="text-xs font-medium text-primary">Endeavor to succeed</p>
+              </div>
+            </div>
           </motion.div>
           <p className="mt-4 text-sm font-semibold text-foreground">
             RELI — Reintegration &amp; Early Learning Institute
           </p>
-          <p className="mt-1 text-sm text-muted-foreground">Healing Minds. Building Futures.</p>
           <p className="mt-1 text-xs text-muted-foreground">A program of Hope for Life Agency</p>
         </div>
 

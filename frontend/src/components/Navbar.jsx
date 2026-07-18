@@ -30,6 +30,9 @@ export function Navbar() {
           <ReliLogo className="h-11 w-11 rounded-full object-cover shadow-soft" />
           <div className="leading-tight">
             <span className="block text-lg font-extrabold text-gradient">RELI</span>
+            <span className="block text-[10px] font-semibold tracking-wide text-primary sm:text-[11px]">
+              Restore Hope
+            </span>
             <span className="hidden text-[10px] font-medium uppercase tracking-wide text-muted-foreground sm:block">
               Reintegration &amp; Early Learning Institute
             </span>
@@ -53,7 +56,13 @@ export function Navbar() {
               <Heart className="h-4 w-4" /> Donate
             </Link>
           </motion.div>
-          <HopeLogo className="hidden h-10 w-10 rounded-full object-cover md:block" />
+          <div className="hidden items-center gap-2 md:flex">
+            <HopeLogo className="h-10 w-10 rounded-full object-cover" />
+            <div className="leading-tight">
+              <span className="block text-xs font-bold text-foreground">Hope4Life</span>
+              <span className="block text-[10px] font-medium text-muted-foreground">Endeavor to succeed</span>
+            </div>
+          </div>
           <button
             className="rounded-md p-2 text-foreground lg:hidden"
             onClick={() => setOpen((v) => !v)}

@@ -83,16 +83,26 @@ export default function Home() {
             transition={{ delay: 0.1, type: "spring" }}
             className="flex justify-center"
           >
-            <motion.div
-              animate={{ boxShadow: ["0 10px 40px -8px oklch(0.62 0.13 235 / 0.28)", "0 20px 50px -8px oklch(0.55 0.13 152 / 0.45)", "0 10px 40px -8px oklch(0.62 0.13 235 / 0.28)"] }}
-              transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
-              className="rounded-full bg-background p-3 shadow-glow"
-            >
-              <ReliLogo
-                floating
-                className="h-64 w-64 rounded-full object-cover md:h-80 md:w-80"
-              />
-            </motion.div>
+            <div className="flex flex-col items-center gap-4">
+              <motion.div
+                animate={{ boxShadow: ["0 10px 40px -8px oklch(0.62 0.13 235 / 0.28)", "0 20px 50px -8px oklch(0.55 0.13 152 / 0.45)", "0 10px 40px -8px oklch(0.62 0.13 235 / 0.28)"] }}
+                transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
+                className="rounded-full bg-background p-3 shadow-glow"
+              >
+                <ReliLogo
+                  floating
+                  className="h-64 w-64 rounded-full object-cover md:h-80 md:w-80"
+                />
+              </motion.div>
+              <motion.p
+                initial={{ opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.25 }}
+                className="text-center text-lg font-semibold tracking-wide text-primary-foreground md:text-xl"
+              >
+                Restore Hope
+              </motion.p>
+            </div>
           </motion.div>
         </div>
       </section>

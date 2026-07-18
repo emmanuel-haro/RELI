@@ -65,7 +65,7 @@ router.post("/bank", async (req, res) => {
 
     if (!emailResult.sent) {
       console.warn("Donation recorded but email failed:", emailResult.error);
-      responsePayload.warning = `Donation saved, but email delivery failed: ${emailResult.error || "unknown SMTP error"}`;
+      responsePayload.warning = `Donation saved, but email delivery failed: ${emailResult.error || "unknown email error"}`;
     }
 
     res.status(201).json(responsePayload);
