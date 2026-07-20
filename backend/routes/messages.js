@@ -30,7 +30,11 @@ router.post("/", async (req, res) => {
     const response = {
       success: true,
       message: "Your message has been received. We will get back to you soon.",
-      data: { id: saved._id, emailSent: notification.sent },
+      data: {
+        id: saved._id,
+        emailSent: notification.sent,
+        partial: !notification.sent,
+      },
     };
 
     if (!notification.sent) {

@@ -30,9 +30,13 @@ export default function Contacts() {
 
     try {
       const res = await api.sendMessage(body);
-      setWarning(res.warning || "");
-      setSent(true);
-      form.reset();
+      if (res.warning) {
+        setWarning(res.warning);
+        setSent(false);
+      } else {
+        setSent(true);
+        form.reset();
+      }
     } catch (err) {
       setError(err.message || "Failed to send message. Please try again.");
     } finally {
@@ -107,6 +111,11 @@ export default function Contacts() {
                   {error && (
                     <div className="flex items-center gap-2 rounded-xl bg-destructive/10 px-4 py-3 text-sm text-destructive">
                       <AlertCircle className="h-4 w-4 shrink-0" /> {error}
+                    </div>
+                  )}
+                  {warning && (
+                    <div className="flex items-center gap-2 rounded-xl bg-warning/10 px-4 py-3 text-sm text-warning">
+                      <AlertCircle className="h-4 w-4 shrink-0" /> {warning}
                     </div>
                   )}
                   {[

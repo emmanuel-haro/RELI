@@ -42,10 +42,13 @@ npm run install:all
 
 Copy `backend/.env.example` to `backend/.env` and update:
 
-- `MONGODB_URI` — your MongoDB connection
-- `MPESA_*` — Safaricom Daraja API credentials (for live M-Pesa STK Push)
-- `BANK_*` — your real bank account details
-- `SMTP_*` — optional email notifications
+- `MONGODB_URI` — your MongoDB connection string. If using Atlas, whitelist your current IP address in the cluster network access settings.
+- `CLIENT_URL` — your front-end origin, typically `http://localhost:5173` during development.
+- `SENDGRID_API_KEY` — a valid SendGrid API key starting with `SG.`.
+- `EMAIL_FROM` — a verified SendGrid sender email (Single Sender or authenticated domain).
+- `MPESA_*` — Safaricom Daraja API credentials (for live M-Pesa STK Push).
+- `BANK_*` — your real bank account details.
+- `SMTP_*` — optional email notifications for local testing only; Render free tier blocks outbound SMTP.
 
 ### Run Development
 
