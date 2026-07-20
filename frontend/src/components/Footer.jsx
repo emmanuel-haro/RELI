@@ -59,7 +59,7 @@ export function Footer() {
           <h4 className="text-sm font-bold uppercase tracking-wide text-primary">Reach Us</h4>
           <ul className="mt-4 space-y-3 text-sm text-muted-foreground">
             <li className="flex items-start gap-2"><Phone className="mt-0.5 h-4 w-4 text-secondary" /> +254 724 811 611</li>
-            <li className="flex items-start gap-2"><Mail className="mt-0.5 h-4 w-4 text-secondary" /> hope4lifeagency@gmail.com</li>
+            <li className="flex items-start gap-2"><Mail className="mt-0.5 h-4 w-4 text-secondary" /> emmanuelharo2020@gmail.com</li>
             <li className="flex items-start gap-2"><MapPin className="mt-0.5 h-4 w-4 text-secondary" /> Roka Maweni, Kilifi North, Kilifi County, Kenya</li>
           </ul>
         </div>

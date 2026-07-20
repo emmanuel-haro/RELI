@@ -63,7 +63,7 @@ router.post("/bank", async (req, res) => {
       },
     };
 
-    if (!emailResult.sent) {
+    if (!emailResult.sent || emailResult.partial) {
       console.warn("Donation recorded but email failed:", emailResult.error);
       responsePayload.warning = `Donation saved, but email delivery failed: ${emailResult.error || "unknown email error"}`;
     }

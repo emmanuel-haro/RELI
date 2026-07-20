@@ -33,11 +33,11 @@ router.post("/", async (req, res) => {
       data: {
         id: saved._id,
         emailSent: notification.sent,
-        partial: !notification.sent,
+        partial: Boolean(notification.partial),
       },
     };
 
-    if (!notification.sent) {
+    if (!notification.sent || notification.partial) {
       response.warning = `Message saved, but email delivery failed: ${notification.error || "unknown email error"}`;
     }
 

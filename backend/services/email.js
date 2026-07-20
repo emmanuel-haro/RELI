@@ -4,9 +4,13 @@ import dns from "dns";
 let transporter = null;
 
 const EMAIL_TIMEOUT_MS = Math.max(Number(process.env.SMTP_TIMEOUT_MS) || 25000, 10000);
-const NOTIFY_EMAIL = process.env.NOTIFY_EMAIL || "hope4lifeagency@gmail.com";
+const NOTIFY_EMAIL = process.env.NOTIFY_EMAIL || process.env.ADMIN_EMAIL || "emmanuelharo2020@gmail.com";
 const EMAIL_FROM = process.env.EMAIL_FROM || process.env.SMTP_USER || NOTIFY_EMAIL;
 const EMAIL_FROM_NAME = process.env.EMAIL_FROM_NAME || "RELI Website";
+const EMAIL_REPLY_TO = process.env.EMAIL_REPLY_TO?.trim() || null;
+
+// Domains that fail Gmail DMARC when used as SendGrid Single Sender (no domain authentication).
+const DMARC_BLOCKED_DOMAINS = ["lasttea.com"];
 
 function withTimeout(promise, ms, label) {
   return Promise.race([
@@ -100,11 +104,12 @@ function getTransporter() {
   }
 
   const port = Number(SMTP_PORT) || 587;
+  const fromAddress = process.env.EMAIL_FROM?.trim() || SMTP_USER.trim();
   transporter = nodemailer.createTransport({
     host: smtpHost,
     port,
     secure: port === 465,
-    auth: { user: SMTP_USER, pass: SMTP_PASS },
+    auth: { user: SMTP_USER.trim(), pass: SMTP_PASS.trim() },
     connectionTimeout: 15000,
     greetingTimeout: 15000,
     socketTimeout: EMAIL_TIMEOUT_MS,
@@ -115,7 +120,7 @@ function getTransporter() {
     },
   });
 
-  console.log(`Created SMTP transporter: host=${smtpHost}, port=${port}`);
+  console.log(`Created SMTP transporter: host=${smtpHost}, port=${port}, from=${fromAddress}`);
   return transporter;
 }
 
@@ -197,9 +202,10 @@ async function sendViaSmtp({ to, subject, text, html, replyTo, fromName = EMAIL_
   const transport = getTransporter();
   if (!transport) return { sent: false, error: "SMTP is not configured" };
 
+  const fromAddress = process.env.EMAIL_FROM?.trim() || process.env.SMTP_USER?.trim() || EMAIL_FROM;
   await withTimeout(
     transport.sendMail({
-      from: `"${fromName}" <${EMAIL_FROM}>`,
+      from: `"${fromName}" <${fromAddress}>`,
       to,
       replyTo,
       subject,

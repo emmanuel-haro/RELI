@@ -106,6 +106,11 @@ async function start() {
   console.log(
     `Email provider: ${emailInfo.provider} (${emailInfo.configured ? "configured" : "NOT configured"}) → notify ${emailInfo.notify}`,
   );
+  if (Array.isArray(emailInfo.warnings) && emailInfo.warnings.length > 0) {
+    for (const warning of emailInfo.warnings) {
+      console.warn(`Email warning: ${warning}`);
+    }
+  }
   if (emailInfo.keyError) {
     console.warn(`SendGrid key problem: ${emailInfo.keyError}`);
   }
