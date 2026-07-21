@@ -45,7 +45,7 @@ Copy `backend/.env.example` to `backend/.env` and update:
 - `MONGODB_URI` — your MongoDB connection string. If using Atlas, whitelist your current IP address in the cluster network access settings.
 - `CLIENT_URL` — your front-end origin, typically `http://localhost:5173` during development.
 - `SENDGRID_API_KEY` — a valid SendGrid API key starting with `SG.`.
-- `EMAIL_FROM` — a verified SendGrid sender email (Single Sender or authenticated domain).
+- `EMAIL_FROM` — a verified SendGrid sender identity. In SendGrid, verify this address as a Single Sender or authenticate its domain before sending.
 - `NOTIFY_EMAIL` — recipient inbox for contact and donation notifications (for this setup: `emmanuelharo2020@gmail.com`).
 - `MPESA_*` — Safaricom Daraja API credentials (for live M-Pesa STK Push).
 - `BANK_*` — your real bank account details.

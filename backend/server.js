@@ -99,7 +99,9 @@ async function start() {
   try {
     await connectDB();
   } catch (err) {
-    console.warn("MongoDB connection failed at startup; continuing with limited functionality:", err.message);
+    console.error("MongoDB connection failed at startup:", err);
+    console.error("The backend cannot safely start without database access.");
+    process.exit(1);
   }
 
   const emailInfo = getEmailProviderInfo();

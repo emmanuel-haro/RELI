@@ -73,7 +73,7 @@ function inferSmtpHost(user, host) {
 
 export function getEmailProviderInfo() {
   const provider = resolveEmailProvider();
-  const info = { provider, from: EMAIL_FROM, notify: NOTIFY_EMAIL };
+  const info = { provider, from: EMAIL_FROM, notify: NOTIFY_EMAIL, warnings: [] };
 
   if (provider === "sendgrid") {
     const key = normalizeApiKey(process.env.SENDGRID_API_KEY);
@@ -81,6 +81,16 @@ export function getEmailProviderInfo() {
     info.configured = Boolean(key && !keyError);
     info.keyError = keyError || undefined;
     info.note = "HTTP email via SendGrid (works on Render free tier)";
+
+    if (!EMAIL_FROM) {
+      info.warnings.push(
+        "EMAIL_FROM is not set. Set EMAIL_FROM to a verified SendGrid sender address.",
+      );
+    } else {
+      info.warnings.push(
+        "EMAIL_FROM must be a verified SendGrid sender identity: either a Single Sender or an authenticated sending domain.",
+      );
+    }
   } else {
     const smtpHost = inferSmtpHost(process.env.SMTP_USER, process.env.SMTP_HOST);
     info.configured = Boolean(smtpHost && process.env.SMTP_USER && process.env.SMTP_PASS);
