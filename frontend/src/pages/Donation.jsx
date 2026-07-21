@@ -44,10 +44,17 @@ const methodLabels = {
   bank_transfer: "Bank Transfer",
 };
 
+const emptyForm = {
+  donorName: "",
+  email: "",
+  amount: "",
+  category: "general",
+};
+
 export default function Donation() {
   const [config, setConfig] = useState(null);
   const [method, setMethod] = useState("mpesa_paybill");
-  const [form, setForm] = useState({ donorName: "", phone: "", email: "", amount: 1000, category: "general" });
+  const [form, setForm] = useState(emptyForm);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState(null);
@@ -75,6 +82,10 @@ export default function Donation() {
     setTimeout(() => setCopied(""), 2000);
   }
 
+  function resetForm() {
+    setForm(emptyForm);
+  }
+
   // STK Push has been removed — M-Pesa methods use the same record flow as bank transfers.
 
   async function handleBankSubmit(e) {
@@ -91,6 +102,7 @@ export default function Donation() {
         category: form.category,
         method,
       });
+      resetForm();
       setSuccess({
         type: method,
         methodLabel: res.data?.paymentMethod || methodLabels[method] || "Donation",
@@ -99,6 +111,7 @@ export default function Donation() {
         warning: res.warning,
       });
     } catch (err) {
+      resetForm();
       setError(err.message);
     } finally {
       setLoading(false);
