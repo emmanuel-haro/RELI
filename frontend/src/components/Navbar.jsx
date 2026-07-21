@@ -59,7 +59,7 @@ export function Navbar() {
           <div className="hidden items-center gap-2 md:flex">
             <HopeLogo className="h-10 w-10 rounded-full object-cover" />
             <div className="leading-tight">
-              <span className="block text-xs font-bold text-foreground">Hope4Life</span>
+              <span className="block text-xs font-bold text-foreground">Hope for life agency</span>
               <span className="block text-[10px] font-medium text-muted-foreground">Endeavor to succeed</span>
             </div>
           </div>

@@ -24,7 +24,7 @@ export function Footer() {
             <div className="flex items-center gap-2">
               <HopeLogo className="h-12 w-12 rounded-full object-cover shadow-soft" />
               <div className="leading-tight">
-                <p className="text-sm font-bold text-foreground">Hope4Life</p>
+                <p className="text-sm font-bold text-foreground">Hope for life agency</p>
                 <p className="text-xs font-medium text-primary">Endeavor to succeed</p>
               </div>
             </div>
