@@ -46,7 +46,7 @@ Copy `backend/.env.example` to `backend/.env` and update:
 - `CLIENT_URL` — your front-end origin, typically `http://localhost:5173` during development.
 - `SENDGRID_API_KEY` — a valid SendGrid API key starting with `SG.`.
 - `EMAIL_FROM` — a verified SendGrid sender identity. In SendGrid, verify this address as a Single Sender or authenticate its domain before sending.
-- `NOTIFY_EMAIL` — recipient inbox for contact and donation notifications (for this setup: `emmanuelharo2020@gmail.com`).
+- `NOTIFY_EMAIL` — recipient inbox for contact and donation notifications (for this setup: `hope4lifeagency@gmail.com`).
 - `MPESA_*` — Safaricom Daraja API credentials (for live M-Pesa STK Push).
 - `BANK_*` — your real bank account details.
 - `SMTP_*` — optional email notifications for local testing only; Render free tier blocks outbound SMTP.

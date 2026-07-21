@@ -4,9 +4,9 @@ import dns from "dns";
 let transporter = null;
 
 const EMAIL_TIMEOUT_MS = Math.max(Number(process.env.SMTP_TIMEOUT_MS) || 25000, 10000);
-const NOTIFY_EMAIL = process.env.NOTIFY_EMAIL || process.env.ADMIN_EMAIL || "emmanuelharo2020@gmail.com";
+const NOTIFY_EMAIL = process.env.NOTIFY_EMAIL || process.env.ADMIN_EMAIL || "hope4lifeagency@gmail.com";
 const EMAIL_FROM = process.env.EMAIL_FROM || process.env.SMTP_USER || NOTIFY_EMAIL;
-const EMAIL_FROM_NAME = process.env.EMAIL_FROM_NAME || "RELI Website";
+const EMAIL_FROM_NAME = process.env.EMAIL_FROM_NAME || "Hope4Life";
 const EMAIL_REPLY_TO = process.env.EMAIL_REPLY_TO?.trim() || null;
 
 // Domains that fail Gmail DMARC when used as SendGrid Single Sender (no domain authentication).

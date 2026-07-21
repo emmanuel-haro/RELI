@@ -60,7 +60,7 @@ export default function Contacts() {
                   <a key={p} href={`tel:${p.replace(/\s/g, "")}`} className="block hover:text-primary">{p}</a>
                 )) },
                 { icon: Mail, title: "Email", content: (
-                  <a href="mailto:emmanuelharo2020@gmail.com" className="hover:text-primary">emmanuelharo2020@gmail.com</a>
+                  <a href="mailto:hope4lifeagency@gmail.com" className="hover:text-primary">hope4lifeagency@gmail.com</a>
                 ) },
                 { icon: MapPin, title: "Location", content: (
                   <p>Roka Maweni (Timboni Area), Off Mombasa–Malindi Road,<br />After Kadegeni Shopping Centre, Kilifi North Sub-County,<br />Kilifi County, Kenya</p>
