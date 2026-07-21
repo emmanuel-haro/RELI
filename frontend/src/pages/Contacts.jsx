@@ -98,11 +98,15 @@ export default function Contacts() {
                   <p className="font-semibold text-foreground">Thank you! Your message has been received.</p>
                   <p className="text-sm text-muted-foreground">We will get back to you as soon as possible.</p>
                   {warning && (
-                <div className="mt-4 w-full rounded-2xl bg-warning/10 px-4 py-3 text-sm text-warning">
-                  <strong>Email notice:</strong> {warning}
-                </div>
-              )}
-              <button onClick={() => { setSent(false); setWarning(""); }} className="mt-2 text-sm font-semibold text-primary hover:underline">
+                    <div className="mt-4 w-full rounded-2xl bg-warning/10 px-4 py-3 text-sm text-warning">
+                      <strong>Email notice:</strong> {warning}
+                    </div>
+                  )}
+                  <button
+                    type="button"
+                    onClick={() => { setSent(false); setWarning(""); setError(""); }}
+                    className="mt-2 text-sm font-semibold text-primary hover:underline"
+                  >
                     Send another message
                   </button>
                 </motion.div>

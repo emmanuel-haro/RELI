@@ -58,6 +58,7 @@ export default function Donation() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState(null);
+  const [submitted, setSubmitted] = useState(false);
   const [copied, setCopied] = useState("");
 
   useEffect(() => {
@@ -110,9 +111,11 @@ export default function Donation() {
         reference: res.data?.reference,
         warning: res.warning,
       });
+      setSubmitted(true);
     } catch (err) {
       resetForm();
       setError(err.message);
+      setSubmitted(false);
     } finally {
       setLoading(false);
     }
@@ -184,7 +187,7 @@ export default function Donation() {
               key={m.id}
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
-              onClick={() => { setMethod(m.id); setError(""); setSuccess(null); }}
+              onClick={() => { setMethod(m.id); setError(""); setSuccess(null); setSubmitted(false); }}
               className={`inline-flex items-center gap-2 rounded-full px-5 py-2.5 text-sm font-semibold transition-all ${
                 method === m.id
                   ? "bg-gradient-hero text-primary-foreground shadow-glow animate-pulse-glow"
@@ -206,17 +209,18 @@ export default function Donation() {
           </motion.div>
         )}
 
-        {success && (
+        {submitted && success && (
           <motion.div
             initial={{ scale: 0.9, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
             className="mx-auto mt-6 max-w-xl rounded-2xl bg-gradient-soft p-6 text-center"
           >
             <CheckCircle2 className="mx-auto h-10 w-10 text-brand-green" />
+            <p className="mt-3 font-semibold text-foreground">Thank you! Your donation record has been received.</p>
             {success.methodLabel && (
-              <p className="mt-3 text-sm font-medium text-muted-foreground">{success.methodLabel} confirmed</p>
+              <p className="mt-2 text-sm font-medium text-muted-foreground">{success.methodLabel} confirmed</p>
             )}
-            <p className="mt-3 font-semibold text-foreground">{success.message}</p>
+            <p className="mt-3 text-sm text-muted-foreground">{success.message}</p>
             {success.reference && (
               <p className="mt-2 text-sm text-muted-foreground">Reference: <strong>{success.reference}</strong></p>
             )}
@@ -225,10 +229,18 @@ export default function Donation() {
                 <strong>Email notice:</strong> {success.warning}
               </div>
             )}
+            <button
+              type="button"
+              onClick={() => { setSubmitted(false); setSuccess(null); setError(""); }}
+              className="mt-5 text-sm font-semibold text-primary hover:underline"
+            >
+              Make another donation
+            </button>
           </motion.div>
         )}
 
-        <div className="mt-10 grid gap-8 lg:grid-cols-2">
+        {!submitted && (
+          <div className="mt-10 grid gap-8 lg:grid-cols-2">
           {(method === "mpesa_paybill" || method === "mpesa_buygoods") && (
             <>
               <Reveal direction="left">
@@ -426,7 +438,8 @@ export default function Donation() {
               </Reveal>
             </>
           )}
-        </div>
+          </div>
+        )}
       </Section>
     </>
   );
